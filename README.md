@@ -1,4 +1,11 @@
-# SceneraNodeSDK
-Enables algorithms to be linked to the Scenera PaaS.
+# Scenera Node SDK Library
 
-Tst
+A small library made designed to create AI Nodes in the Scenera Ecosystem.
+
+# Installation
+
+```pip install scenera.node```
+
+# Get started
+
+Sees https://docs.scenera.live

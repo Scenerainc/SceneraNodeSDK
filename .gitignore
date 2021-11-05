@@ -1,0 +1,10 @@
+.vscode
+__pycache__
+scenera/__pycache__
+scenera/node/__pycache__
+tests/__pycache__
+tests/node/__pycache__
+.DS_Store
+scenera.node.egg-info
+build
+dist

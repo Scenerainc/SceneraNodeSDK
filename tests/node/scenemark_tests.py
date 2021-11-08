@@ -1,5 +1,5 @@
 """
-Unittests
+Unittests for the Node AI SDK
 """
 
 import unittest

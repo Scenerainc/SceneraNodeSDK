@@ -3,7 +3,7 @@ This filecontains the main SceneMark class and its methods for the Scenera Node 
 """
 
 __author__ = 'Dirk Meulenbelt'
-__date__ = '02.11.21'
+__date__ = '09.11.21'
 
 from .spec import *
 import json
@@ -477,9 +477,13 @@ class SceneMark:
         else:
             analysis_list_item['EventType'] = self.event_type
 
+        if custom_event_type:
+            analysis_list_item['CustomEventType'] = custom_event_type
+        else:
+            analysis_list_item['CustomEventType'] = self.custom_event_type
+
         analysis_list_item['AnalysisID'] = self.analysis_id
         analysis_list_item['AnalysisDescription'] = self.analysis_description
-        analysis_list_item['CustomEventType'] = custom_event_type
         analysis_list_item['ErrorMessage'] = error_message
         analysis_list_item['TotalItemCount'] = total_item_count
         analysis_list_item['DetectedObjects'] = detected_objects

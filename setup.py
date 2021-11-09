@@ -13,11 +13,11 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
 setup(
     name="scenera.node",
-    version="0.1.21",
+    version="0.1.3",
     description="Scenera Node SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://medium-multiply.readthedocs.io/",
+    url="https://docs.scenera.net/",
     author="Dirk Meulenbelt",
     author_email="dirkmeulenbelt@gmail.com",
     license="MIT",

@@ -651,12 +651,16 @@ class SceneMark:
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'}
 
+        verify = False
+        if self.nodesequencer_address['Ingress'].StartsWith("https"):
+            verify = True
+
         # Call NodeSequencer with an updated SceneMark
         answer = requests.post(
             self.nodesequencer_address['Ingress'],
             data=scenemark,
             headers=ns_header,
-            verify=True,
+            verify=verify,
             stream=False)
         print("Returning to Node Sequencer", answer)
 

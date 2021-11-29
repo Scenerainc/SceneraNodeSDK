@@ -74,6 +74,7 @@ DataType = frozenset([
 MediaFormat = frozenset([
     "UNSPECIFIED",
     "JPEG",
+    "PNG",
     "H264",
     "H265",
     "RAW",

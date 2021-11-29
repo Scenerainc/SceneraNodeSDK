@@ -652,7 +652,7 @@ class SceneMark:
                     'Content-Type': 'application/json'}
 
         verify = False
-        if self.nodesequencer_address['Ingress'].StartsWith("https"):
+        if self.nodesequencer_address['Ingress'].startswith("https"):
             verify = True
 
         # Call NodeSequencer with an updated SceneMark

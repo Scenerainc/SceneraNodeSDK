@@ -490,6 +490,7 @@ SceneMarkSchema = {
                         "enum": [
                             "UNSPECIFIED",
                             "JPEG",
+                            "PNG",
                             "H.264",
                             "H.265",
                             "RAW",

@@ -484,7 +484,7 @@ class SceneMark:
 
         analysis_list_item['AnalysisID'] = self.analysis_id
         analysis_list_item['AnalysisDescription'] = self.analysis_description
-        analysis_list_item['ErrorMessage'] = error_message
+        analysis_list_item['ErrorMessage'] = str(error_message)
         analysis_list_item['TotalItemCount'] = total_item_count
         analysis_list_item['DetectedObjects'] = detected_objects
 

@@ -443,6 +443,8 @@ SceneMarkSchema = {
                     "Duration": {
                         "type": [
                             "string",
+                            "integer",
+                            "number",
                             "null"
                         ]
                     },

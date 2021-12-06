@@ -52,10 +52,10 @@ class SceneMarkTestCase(unittest.TestCase):
     def test_get_my_version_number(self):
         # Set to 3.0 because the initialisation has already
         # updated the VersionControl
-        self.assertEqual(self.sm.get_my_version_number(), 3.0)
+        self.assertEqual(self.sm.get_my_version_number(), 4.0)
 
         #This can be left at 2.0 because it's the class attribute
-        self.assertEqual(self.sm.my_version_number, 2.0)
+        self.assertEqual(self.sm.my_version_number, 3.0)
 
     def test_get_scenedata_datatype_uri_dict(self):
         datatype_uri_dict = self.sm.get_scenedata_datatype_uri_dict()
@@ -308,8 +308,13 @@ class Request:
                     "DataPipelineInstanceID": "7e58d8bb-9545-4177-a508-40ece9cba7f5",
                     "VersionList": [
                         {
+                            "VersionNumber": 2.0,
+                            "DateTimeStamp": "2021-07-19T16:26:21.647Z",
+                            "NodeID": "SecondNode"
+                        },
+                        {
                             "VersionNumber": 1.0,
-                            "DateTimeStamp": "2021-07-19T16: 25: 21.647Z",
+                            "DateTimeStamp": "2021-07-19T16:25:21.647Z",
                             "NodeID": "FirstNode"
                         }
                     ]

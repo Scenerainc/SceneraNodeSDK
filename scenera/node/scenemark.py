@@ -144,7 +144,8 @@ class SceneMark:
         * Float representing the Version Number of the Node.
         """
         try:
-            return self.scenemark['VersionControl']['VersionList'][-1]['VersionNumber'] + 1.0
+            #return self.scenemark['VersionControl']['VersionList'][-1]['VersionNumber'] + 1.0
+            return max([vc_item['VersionNumber'] for vc_item in self.scenemark['VersionControl']['VersionList']]) + 1.0
         except:
             raise ValidationError("The VersionControl item is missing or malformed")
 
@@ -351,7 +352,7 @@ class SceneMark:
         item_type_count : int = 1,
         probability : float = 1.0,
         attributes : list = [],
-        bounding_box : dict = {},
+        bounding_box : dict = None,
         ):
         """
         Gets the SceneDataURI of the SceneDataID you put in.

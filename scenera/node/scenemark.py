@@ -625,6 +625,18 @@ class SceneMark:
 
         self.scenemark['VersionControl']['VersionList'].append(version_list_item)
 
+    def add_custom_notification_message(self, message : str):
+        """
+        Adds a custom notification message to the SceneMark to display in the notification
+
+        Parameters
+        ----------
+        message : a string that is displayed in the app, capped at 200 characters
+
+        """
+        assert len(str(message)) <= 200
+        self.scenemark['NotificationMessage'] = str(message)
+
     def return_scenemark_to_ns(self, test = False):
         """
         Returns the SceneMark to the NodeSequencer using the received address
@@ -667,8 +679,14 @@ class SceneMark:
 
     # Helper Functions
     def get_current_utc_timestamp(self):
+        """
+        Helper function to create a UTC timestamp in the required format.
+        """
         return f"{'{:%Y-%m-%dT%H:%M:%S.%f}'.format(datetime.datetime.utcnow())[:-3]}Z"
 
     def generate_random_id(self, length):
+        """
+        Helper function to create a random ID
+        """
         return ''.join([random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for n in range(length)])
 

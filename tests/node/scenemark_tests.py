@@ -50,11 +50,11 @@ class SceneMarkTestCase(unittest.TestCase):
                 spec.NodesequencerAddressSchema))
 
     def test_get_my_version_number(self):
-        # Set to 3.0 because the initialisation has already
+        # Set to 4.0 because the initialisation has already
         # updated the VersionControl
         self.assertEqual(self.sm.get_my_version_number(), 4.0)
 
-        #This can be left at 2.0 because it's the class attribute
+        #This can be left at 3.0 because it's the class attribute
         self.assertEqual(self.sm.my_version_number, 3.0)
 
     def test_get_scenedata_datatype_uri_dict(self):
@@ -283,7 +283,7 @@ class SceneMarkTestCase(unittest.TestCase):
     def test_add_version_control_item(self):
         self.assertEqual(
             self.sm.scenemark['VersionControl']['VersionList'][-1]['VersionNumber'],
-            2.0)
+            3.0)
         self.assertTrue(
             self.sm.scenemark['VersionControl']['VersionList'][-1]['DateTimeStamp'])
         self.assertTrue(
@@ -293,6 +293,11 @@ class SceneMarkTestCase(unittest.TestCase):
     def test_return_scenemark_to_ns(self):
         scenemark = self.sm.return_scenemark_to_ns(test = True)
         self.assertEqual(scenemark[0],"{")
+
+    def test_add_notification_message(self):
+        message = "This is a push notification"
+        self.sm.add_custom_notification_message(message)
+        self.assertEqual(self.sm.scenemark['NotificationMessage'], message)
 
 class Request:
     def __init__(self):

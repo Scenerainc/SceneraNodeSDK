@@ -26,36 +26,27 @@ class SceneMark:
     for retrieving information from, and adding information to, the SceneMark
     data structure.
 
-    Parameters
-    ----------
-    request : incoming request including a SceneMark and a NodeSequencerAddress
-    node_id : string, env variable assigned to the Node through the Developer Portal.
+    :param request: Incoming request including a SceneMark and a NodeSequencerAddress
+    :param node_id: Environment variable assigned to the Node through the Developer Portal.
         The Node ID is the unique identifier of the Node.
-    event_type : string, env variable assigned to the Node through the Developer Portal.
-        The main thing this Node is 'interested in'. Can take a range of values from
-        the specification:
-
-        "Custom",\n
-        "ItemPresence",\n
-        "Loitering",\n
-        "Intrusion",\n
-        "Falldown",\n
-        "Violence",\n
-        "Fire",\n
-        "Abandonment",\n
-        "SpeedGate",\n
-        "Xray",\n
-        "Facility"
-
-    custom_event_type : string, default "", set when the EventType is set to "Custom"
-    analysis_description : string, default "", env variable assigned to the Node
+    :type node_id: string
+    :param event_type: Environment variable assigned to the Node through the Developer Portal.
+        The main thing this Node is 'interested in'. Can take the following range of values from
+        the specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence, Fire,
+        Abandonment, SpeedGate, Xray, Facility
+    :type event_type: string
+    :param custom_event_type: Set when the EventType is set to 'Custom', defaults to "". Optional
+    :type custom_event_type: string
+    :param analysis_description: string, default "", env variable assigned to the Node
         through the Developer Portal. Used to describe what the analysis is about,
-        what it is 'doing'. By default set to an empty string.
-    analysis_id : string, default "", env variable assigned to the Node through the Developer Portal.
+        what it is 'doing'. By default set to an empty string. Optional.
+    :type analysis_description: string
+    :param analysis_id: Environment variable assigned to the Node through the Developer Portal.
         Should be a unique identifier refering to the particular algorithm
-        used within the node.
+        used within the node. Defaults to "". Optional.
+    :type analysis_id: string
     """
-    def __init__(
+    def __init__ (
         self,
         request,
         node_id : str,
@@ -64,7 +55,9 @@ class SceneMark:
         analysis_description : str = "",
         analysis_id : str = "",
         ):
-
+        """
+        Constructor method
+        """
         # Verify SceneMark input to match the spec
         self.scenemark = request.json['SceneMark']
         self.request_json_validator(self.scenemark, SceneMarkSchema)
@@ -93,14 +86,11 @@ class SceneMark:
         Used for development purposes to manually check the request.
         Saves the request as a json to file
 
-        Parameters
-        ----------
-        request_type : string
-            "SM" for SceneMark,
-            "NS" for the NodeSequencer Address
-        name : string
-            The name you want to save the json as. Defaults to "scenemark" or
+        :param request_type: 'SM' for SceneMark, 'NS' for the NodeSequencer Address
+        :type request_type: string
+        :param name: The name you want to save the json as. Defaults to "scenemark" or
             "nodesequencer_address" based on request_type setting
+        :type name: string
         """
         assert request_type in ("SM", "NS")
         if request_type == "SM":
@@ -118,15 +108,11 @@ class SceneMark:
         """
         Used internally to validate incoming and outgoing requests.
 
-        Parameters
-        ----------
-        request : the request json
-        schema : the (json) schema (found in spec.py)
-
-        Raises
-        ------
-        ValidationError
-            Represents a JSON Schema validation error.
+        :param request: the request json
+        :type request: json
+        :param schema: the schema found in the spec
+        :type schema: json
+        :raises ValidationError: Represents a JSON Schema validation error.
         """
         try:
             jsonschema.validate(instance = request, schema = schema)
@@ -139,12 +125,11 @@ class SceneMark:
         Used internally to infer the Node's VersionNumer in the node
         sequence. Which is a +1 from the last object in the list.
 
-        Returns
-        -------
-        * Float representing the Version Number of the Node.
+        :return: The Version Number of the Node.
+        :rtype: float
+        :raises ValidationError: VersionControl is missing or malformed
         """
         try:
-            #return self.scenemark['VersionControl']['VersionList'][-1]['VersionNumber'] + 1.0
             return max([vc_item['VersionNumber'] for vc_item in self.scenemark['VersionControl']['VersionList']]) + 1.0
         except:
             raise ValidationError("The VersionControl item is missing or malformed")
@@ -154,17 +139,16 @@ class SceneMark:
         Creates a dictionary that has the datatype as key, and the uri as value,
         like so:
 
-        Returns
-        -------
-        * scenedata_data_type_uri_dict : dict of {datatype -> scenedata_uri}
+        :Example:
 
-        Example
-        -------
-        {
-            'Thumbnail': https://scenedatauri.example.com/1234_thumb.jpg,
-            'RGBStill': https://scenedatauri.example.com/1234_still.jpg,
-            'RGBVideo': https://scenedatauri.example.com/1234_vid.mp4,
+        {\n
+        'Thumbnail': https://scenedatauri.example.com/1234_thumb.jpg,\n
+        'RGBStill': https://scenedatauri.example.com/1234_still.jpg,\n
+        'RGBVideo': https://scenedatauri.example.com/1234_vid.mp4,\n
         }
+
+        :return: dictionary of {datatype -> scenedata_uri}
+        :rtype: dict
         """
         return {scenedata_item['DataType']:scenedata_item['SceneDataURI'] \
             for scenedata_item in self.scenemark['SceneDataList']}
@@ -174,42 +158,38 @@ class SceneMark:
         Creates a dictionary that has the datatype as key, and the uri as value,
         like so:
 
-        Returns
-        -------
-        * scenedata_id_uri_dict : dict of {scenedata_id -> scenedata_uri}
+        :Example:
 
-        Example
-        -------
-        {
-            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac01': https://scenedatauri.example.com/1234_thumb.jpg,
-            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac02': https://scenedatauri.example.com/1234_still.jpg,
-            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac03': https://scenedatauri.example.com/1234_vid.mp4,
+        {\n
+            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac01': https://scenedatauri.example.com/1234_thumb.jpg,\n
+            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac02': https://scenedatauri.example.com/1234_still.jpg,\n
+            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac03': https://scenedatauri.example.com/1234_vid.mp4,\n
         }
+
+        :return: dictionary of {scenedata_id -> scenedata_uri}
+        :rtype: dict
         """
         return {scenedata_item['SceneDataID']:scenedata_item['SceneDataURI'] \
             for scenedata_item in self.scenemark['SceneDataList']}
 
     def get_scenedata_uri_list(self, exclude_thumbnail = False):
         """
-        Creates a dictionary that has the datatype as key, and the uri as value,
+        Creates a list that contains all the URIs
         like so:
 
-        Parameters
-        ----------
-        exclude_thumbnail : bool, default False
-            excludes the 'Thumbnail' DataType from the list
+        :Example:
 
-        Returns
-        -------
-        * scenedata_uri_list : a list of scenedata_uris
-
-        Example
-        -------
-        [
-            https://scenedatauri.example.com/1234_thumb.jpg,
-            https://scenedatauri.example.com/1234_still.jpg,
-            https://scenedatauri.example.com/1234_vid.mp4
+        [\n
+            https://scenedatauri.example.com/1234_thumb.jpg,\n
+            https://scenedatauri.example.com/1234_still.jpg,\n
+            https://scenedatauri.example.com/1234_vid.mp4\n
         ]
+
+        :param exclude_thumbnail: Excludes the 'Thumbnail' DataType from the list, defaults to False. Optional.
+        :type exclude_thumbnail: bool
+
+        :return: List of SceneData URIs
+        :rtype: list
         """
         if exclude_thumbnail:
             return [scenedata_item['SceneDataURI'] \
@@ -223,13 +203,12 @@ class SceneMark:
         """
         Gets the SceneDataID of the SceneData piece relating to the URI you put in.
 
-        Parameters
-        ----------
-        scenedata_uri : string
+        :param scenedata_uri: Uri to access SceneData
+        :type scenedata_uri: string
 
-        Returns / Raises
-        ----------------
-        * SceneDataID, or a Validation Error "No match" if there is no match.
+        :return: SceneDataID corresponding to the URI
+        :rtype: string
+        :raises ValidationError: "No match" if there isn't a match
         """
         for scenedata in self.scenemark['SceneDataList']:
             if scenedata['SceneDataURI'] == uri:
@@ -240,13 +219,12 @@ class SceneMark:
         """
         Gets the SceneDataURI of the SceneDataID you put in.
 
-        Parameters
-        ----------
-        scenedata_id : string
+        :param scenedata_id: SceneDataID
+        :type scenedata_id: string
 
-        Returns / Raises
-        ----------------
-        * SceneDataURI, or a Valiation Error "No match" if there is no match.
+        :return: SceneDataURI corresponding to the ID
+        :rtype: string
+        :raises ValidationError: "No match" if there isn't a match
         """
         for scenedata in self.scenemark['SceneDataList']:
             if scenedata['SceneDataID'] == id:
@@ -257,13 +235,12 @@ class SceneMark:
         """
         Generates a SceneDataID using the Node ID
 
-        Returns
-        -------
-        * scenedata_id : string
+        :Example:
 
-        Example
-        -------
         SDT_9cdff73f-5db1-4e64-9656-ef83bdfeeb90_0001_e4041246
+
+        :return: SceneDataID (see example)
+        :rtype: string
         """
         return f"SDT_{self.node_id}_0001_{self.generate_random_id(6)}"
 
@@ -277,25 +254,26 @@ class SceneMark:
         """
         Generates a Bounding Box using coordinates (from e.g. YOLO)
 
-        Parameters
-        ----------
-        xc : int, top-left x coordinate
-        yc : int, top-left y coordinate
-        height : int, height of the bounding box
-        width : int, width of the bounding box
+        :Example:
 
-        Returns
-        -------
-        * A dictionary bounding box object, see example
-
-        Example
-        -------
-        {
-            "XCoordinate": 10,
-            "YCoordinate": 30,
-            "Height": 400,
-            "Width": 400
+        {\n
+            "XCoordinate": 10,\n
+            "YCoordinate": 30,\n
+            "Height": 400,\n
+            "Width": 400\n
         }
+
+        :param xc: Top-left x coordinate
+        :type xc: int
+        :param yc: Top-left y coordinate
+        :type yc: int
+        :param height: Height of the bounding box
+        :type height: int
+        :param width: Width of the bounding box
+        :type width: int
+
+        :return: A dictionary bounding box object, see example
+        :rtype: dict
         """
         assert (type(xc) == type(yc) == type(height) == type(width) == int), \
             "Arguments need to be integers"
@@ -318,22 +296,25 @@ class SceneMark:
         Generates an Attribute list item, to specify Attributes found
         associated with the Detected Object.
 
-        Parameters
-        ----------
-        scenedata_id : string
+        :Example:
 
-        Returns
-        -------
-        * SceneDataURI, or "No match" if there is no match.
-
-        Example
-        -------
-        {
-            "VersionNumber": 1.0,
-            "Attribute": "Mood",
-            "Value": "Anger",
-            "ProbabilityOfAttribute": 0.8
+        {\n
+            "VersionNumber": 1.0,\n
+            "Attribute": "Mood",\n
+            "Value": "Anger",\n
+            "ProbabilityOfAttribute": 0.8\n
         }
+
+        :param attribute: Name of the attribute
+        :type attribute: string
+        :param value: Value of the attribute
+        :type value: string
+        :param probability_of_attribute: Confidence of the attribute found, optional, defaulted to 1.0 == 100%
+        :type probability_of_attribute: float
+
+        :return: attribute item
+        :rtype: dict
+
         """
         attribute_item = {}
         attribute_item['VersionNumber'] = self.my_version_number
@@ -355,51 +336,51 @@ class SceneMark:
         bounding_box : dict = None,
         ):
         """
-        Gets the SceneDataURI of the SceneDataID you put in.
+        Generates a detected object item
 
-        Parameters
-        ----------
-        nice_item_type : string,
-            indicating the NICEITemType found
-        related_scenedata_id : string,
-            mandatory indication of what item the algorithm ran on
-        custom_item_type : string, default "", allows specifying the custom
-            NICEItemType
-        item_id ; string, default "", indicating an ID on the object, e.g.
-            the person's name
-        item_type_count : int, default 1, counting the amount of the stated NICEItemType
-        probability : float, default 1.0, indicating the confidence on the item
-        attributes : list, default [], containing attribute items
-        bounding_box : dictionary, default {}, containing the bounding box
+        :Example:
 
-        Returns
-        -------
-        * dictionary containing a DetectedObject item, see example.
-
-        Example:
-        --------
-        {
-            "NICEItemType": "Human",
-            "CustomItemType": "",
-            "ItemID": "Chris",
-            "ItemTypeCount": 1,
-            "Probability": 0.93,
-            "Attributes": [
-                {
-                    "VersionNumber": 1.0,
-                    "Attribute": "Mood",
-                    "Value": "Anger",
-                    "ProbabilityOfAttribute": 0.8
-                }
-            ],
-            "BoundingBox": {
-                "XCoordinate": 10,
-                "YCoordinate": 30,
-                "Height": 10,
-                "Width": 10
-            },
-            "RelatedSceneData": "SDT_9cdff73f-5db1-4e64-9656-ef83bdfeeb90_0001_e4041246"
+        {\n
+            "NICEItemType": "Human",\n
+            "CustomItemType": "",\n
+            "ItemID": "Chris",\n
+            "ItemTypeCount": 1,\n
+            "Probability": 0.93,\n
+            "Attributes": [\n
+                {\n
+                    "VersionNumber": 1.0,\n
+                    "Attribute": "Mood",\n
+                    "Value": "Anger",\n
+                    "ProbabilityOfAttribute": 0.8\n
+                }\n
+            ],\n
+            "BoundingBox": {\n
+                "XCoordinate": 10,\n
+                "YCoordinate": 30,\n
+                "Height": 10,\n
+                "Width": 10\n
+            },\n
+            "RelatedSceneData": "SDT_9cdff73f-5db1-4e64-9656-ef83bdfeeb90_0001_e4041246"\n
         }
+
+        :param nice_item_type: Indicating the NICEITemType found
+        :type nice_item_type: string
+        :param related_scenedata_id: Indication of what item the algorithm ran on
+        :type related_scenedata_id: string
+        :param custom_item_type: Allows specifying of the custom NICEItemType, defaults to "". Optional.
+        :type custom_item_type: string
+        :param item_id: Indicating an ID on the object. E.g. Name of the person Defaults to "". Optional.
+        :type item_id: string
+        :param item_type_count: Counting the amount of the stated NICEItemType, optional, defaults to 1,
+        :type item_type_count: int
+        :param probability: Indicating the confidence on the item. Optional, defaults to 1.0.
+        :type probability: float
+        :param attributes: Contains attribute items, defaults to []
+        :type attributes: list
+        :param bounding_box: Contains the bounding box, defaults to None
+        :type bounding_box: dictionary
+        :return: dictionary containing a DetectedObject item, see example.
+        :rtype: dict
         """
         assert nice_item_type in NICEItemType, "This Item Type is not part of the spec."
 
@@ -425,44 +406,39 @@ class SceneMark:
         event_type : str = "",
         ):
         """
-        Updates the SceneMark state with the unique analysis list item
-        that is added by an AI Node. This could be considered the main
-        event of the Node SDKs
+        Updates the SceneMark state with the unique analysis list item that is added by an AI Node.
+        This could be considered the main event of the Node SDKs. Updates the SceneMark in place.
 
-        Parameters
-        ----------
-        processing_status : string, taking one the following values:
-            "CustomAnalysis",\n
-            "Motion",\n
-            "Detected",\n
-            "Recognized",\n
-            "Characterized",\n
-            "Undetected",\n
-            "Failed",\n
-            "Error"
-        custom_event_type : string, default "", set if the above processing status
-            equals CustomAnalysis
-        total_item_count : int, default 0, total amount of items detected in the scene
-        error_message : string, default "", used to propagate errors
-        detected_objects : list, default [], of objects, generated
-        event_type : string, set internally by the initialization of the scenemark
-            object, but may be changed for custom purposes
+        :Example:
 
-        Example:
-        --------
-        {
-            "VersionNumber": 1.0,
-            "AnalysisID": "9cdff73f-5db1-4e64-9656-ef83bdfeeb90",
-            "AnalysisDescription": "Loitering detection",
-            "EventType": "Loitering",
-            "CustomEventType": "",
-            "ProcessingStatus": "Detected",
-            "ErrorMessage": "",
-            "TotalItemCount": 4,
-            "DetectedObjects": [ .. ]
+        {\n
+            "VersionNumber": 1.0,\n
+            "AnalysisID": "9cdff73f-5db1-4e64-9656-ef83bdfeeb90",\n
+            "AnalysisDescription": "Loitering detection",\n
+            "EventType": "Loitering",\n
+            "CustomEventType": "",\n
+            "ProcessingStatus": "Detected",\n
+            "ErrorMessage": "",\n
+            "TotalItemCount": 4,\n
+            "DetectedObjects": [ .. ]\n
         }
 
-        Contains the list of DetectedObjects item within itself.
+        :param processing_status: One the following values: 'CustomAnalysis', 'Motion', 'Detected',
+            'Recognized', 'Characterized', 'Undetected', 'Failed', 'Error'
+        :type processing_status: string
+        :param custom_event_type: Define your event when your EventType is 'Custom'
+        :type custom_event_type: string
+        :param total_item_count: Total amount of items detected in the scene, defaults to 0
+        :type total_item_count: int
+        :param error_message: Used to propagate errors, optional, defaults to ""
+        :type error_message: string
+        :param detected_objects: Holds detected objects, defaults to an empty list
+        :type detected_objects: list
+        :param event_type: Set internally by the constructor, but may be altered for custom purposes. Optional.
+        :type event_type: string
+
+        :raises AssertionError: When the ProcessingStatus is not recognized as part of the spec.
+        :raises AssertionError: When the EventType is not recognized as part of the spec.
         """
         analysis_list_item = {}
         analysis_list_item['VersionNumber'] = self.my_version_number
@@ -495,23 +471,22 @@ class SceneMark:
         """
         Adds a new thumbnail list item to the thumbnail list in the SceneMark
         Use this method when you want to instruct the app to use a different
-        image as the thumbnail to be displayed.
+        image as the thumbnail to be displayed. Changes the SceneMark in place.
 
-        Parameters
-        ----------
-        scenedata_id : string
+        :Example:
 
-        Note
-        ----
+        {\n
+            "VersionNumber": 1.0,\n
+            "SceneDataID": "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_8a7d01"\n
+        }
+
+        :param scenedata_id: SceneDataID of the thumbnail
+        :type scenedata_id: string
+
+        :Note:
+
         Use the Thumbnail id of any existing SceneData, such as a SceneData item
         that you have added yourself.
-
-        Example
-        -------
-        {
-            "VersionNumber": 1.0,
-            "SceneDataID": "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_8a7d01"
-        }
         """
         thumbnail_list_item = {}
         thumbnail_list_item['VersionNumber'] = self.my_version_number
@@ -531,39 +506,48 @@ class SceneMark:
         embedded_scenedata : str = "",
         ):
         """
-        Adds a SceneData item to the SceneMark
+        Adds a SceneData item to the SceneMark in place.
 
-        Example
-        -------
-        {
-            "VersionNumber": 2.0,
-            "SceneDataID": "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_123456",
-            "TimeStamp": "2021-10-29T21:12:17.245Z",
-            "SourceNodeID": "83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7",
-            "SourceNodeDescription": "Scenera Bridge",
-            "Duration": "30",
-            "DataType": "RGBVideo",
-            "Status": "Upload in Progress",
-            "MediaFormat": "H.264",
-            "SceneDataURI": "https://sduri.example.com/vid.mp4",
-            "Resolution": {
-                "Height": 100,
-                "Width": 100
-            },
-            "EmbeddedSceneData": None,
-            "Encryption": False
+        :Example:
+
+        {\n
+            "VersionNumber": 2.0,\n
+            "SceneDataID": "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_123456",\n
+            "TimeStamp": "2021-10-29T21:12:17.245Z",\n
+            "SourceNodeID": "83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7",\n
+            "SourceNodeDescription": "Scenera Bridge",\n
+            "Duration": "30",\n
+            "DataType": "RGBVideo",\n
+            "Status": "Upload in Progress",\n
+            "MediaFormat": "H.264",\n
+            "SceneDataURI": "https://sduri.example.com/vid.mp4",\n
+            "Resolution": {\n
+                "Height": 100,\n
+                "Width": 100\n
+            },\n
+            "EmbeddedSceneData": None,\n
+            "Encryption": False\n
         }
 
-        Parameters
-        ----------
-        scenedata_uri : string, the uri where the
-        datatype : str,
-        source_node_description : str = "",
-        timestamp : str = "",
-        duration : str  = "",
-        media_format : str = "",
-        encryption : bool = False,
-        embedded_scenedata : str = "",
+        :param scenedata_uri: The URI where we find the image
+        :type scenedata_uri: string
+        :param datatype:
+        :type datatype: string
+        :param source_node_description: str = ""
+        :type source_node_description: string
+        :param timestamp: Timestamp of event, defaults to ""
+        :type timestamp: str = "",
+        :param duration: Duration of a videoclip, defaults to ""
+        :type duration: string
+        :param media_format: Format, e.g. H.264
+        :type media_format: string
+        :param encryption: Encryption on or off, defaults to False
+        :type encryption: bool
+        :param embedded_scenedata: Embedded scenedata, no idea what this is for to be honest
+        :type embedded_scenedata: string
+        :raises AssertionError: "No SceneData URI is present."
+        :raises AssertionError: "This DataType is not part of the spec."
+        :raises AssertionError: "This Media Format is not part of the spec."
         """
 
         scenedata_list_item = {}
@@ -610,12 +594,12 @@ class SceneMark:
         Adds a Version Control item to the SceneMark. Uses already existing
         data and is called automatically by the __init__ method
 
-        Example:
-        --------
-        {
-            "VersionNumber": 2.0,
-            "DateTimeStamp": "2021-07-19T16:25:21.647Z",
-            "NodeID": "NodeID"
+        :Example:
+
+        {\n
+            "VersionNumber": 2.0,\n
+            "DateTimeStamp": "2021-07-19T16:25:21.647Z",\n
+            "NodeID": "NodeID"\n
         }
         """
         version_list_item = {}
@@ -629,29 +613,21 @@ class SceneMark:
         """
         Adds a custom notification message to the SceneMark to display in the notification
 
-        Parameters
-        ----------
-        message : a string that is displayed in the app, capped at 200 characters
-
+        :param message: Text for the body of the push notification, capped at 200 characters
+        :type message: string
         """
         assert len(str(message)) <= 200
         self.scenemark['NotificationMessage'] = str(message)
 
     def return_scenemark_to_ns(self, test = False):
         """
-        Returns the SceneMark to the NodeSequencer using the received address
+        Returns the SceneMark to the NodeSequencer with an HTTP call using the received address
 
-        Parameters
-        ----------
-        test : bool, default False, if set to True this returns the scenemark
+        :param test: If set to True this returns the scenemark
             straight to the caller so you can test the node from Postman or
-            some other app
-
-        Returns
-        -------
-        * SceneMark
+            some other app, defaults to False
+        :type test: bool
         """
-
         # Update our original request with the updated SceneMark
         self.request_json_validator(self.scenemark, SceneMarkSchema)
 

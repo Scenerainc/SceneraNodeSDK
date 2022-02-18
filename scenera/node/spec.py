@@ -29,7 +29,8 @@ NICEItemType = frozenset([
     "Animal",
     "TextLogoQRCode",
     "Custom",
-    "Scene"])
+    "Scene"
+    "Undefined"])
 
 ProcessingStatus = frozenset([
     "CustomAnalysis",

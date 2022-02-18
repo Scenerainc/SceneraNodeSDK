@@ -1,6 +1,8 @@
 #Project-specifi
 .vscode
 .DS_Store
+docs/source/_*
+docs/build/html/_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

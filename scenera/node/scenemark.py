@@ -1,23 +1,15 @@
 """
-This filecontains the main SceneMark class and its methods for the Scenera Node SDK.
+This file contains the main SceneMark class and its methods for the Scenera Node SDK.
 """
 
 __author__ = 'Dirk Meulenbelt'
-__date__ = '09.11.21'
+__date__ = '14.03.22'
 
-from .spec import *
-import json
-import jsonschema
-import requests
 import datetime
+import json
 import random
-
-class ValidationError(Exception):
-    """
-    Self-defined error to raise when the values do not match.
-    """
-    def __init__(self, msg):
-        self.msg = msg
+import requests
+from .spec import Spec, request_json_validator
 
 class SceneMark:
     """
@@ -32,7 +24,7 @@ class SceneMark:
     :type node_id: string
     :param event_type: Environment variable assigned to the Node through the Developer Portal.
         The main thing this Node is 'interested in'. Can take the following range of values from
-        the specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence, Fire,
+        the Specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence, Fire,
         Abandonment, SpeedGate, Xray, Facility
     :type event_type: string
     :param custom_event_type: Set when the EventType is set to 'Custom', defaults to "". Optional
@@ -46,6 +38,9 @@ class SceneMark:
         used within the node. Defaults to "". Optional.
     :type analysis_id: string
     """
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-public-methods
     def __init__ (
         self,
         request,
@@ -55,20 +50,18 @@ class SceneMark:
         analysis_description : str = "",
         analysis_id : str = "",
         ):
-        """
-        Constructor method
-        """
-        # Verify SceneMark input to match the spec
+
+        # Verify SceneMark input to match the Spec
         self.scenemark = request.json['SceneMark']
-        self.request_json_validator(self.scenemark, SceneMarkSchema)
+        request_json_validator(self.scenemark, Spec.SceneMarkSchema)
 
         # Verify that we get an address to return the SceneMark z
-        self.nodesequencer_address = request.json['NodeSequencerAddress']
-        self.request_json_validator(self.nodesequencer_address, NodesequencerAddressSchema)
+        self.nodesequencer_header = request.json['NodeSequencerHeader']
+        request_json_validator(self.nodesequencer_header, Spec.NodesequencerHeaderSchema)
 
-        # Set assigned node parameters
+        # Set assigned Node parameters
         self.node_id = node_id
-        assert event_type in EventType, "EventType given not in spec"
+        assert event_type in Spec.EventType, "EventType given not in Spec"
         self.event_type = event_type
         self.custom_event_type = custom_event_type
         self.analysis_description = analysis_description
@@ -79,46 +72,44 @@ class SceneMark:
 
         # Update the version control with the NodeID & TimeStamp
         self.my_timestamp = self.get_current_utc_timestamp()
+
+        # Automatically add a Version Control item to the Node
         self.add_version_control_item()
+
+        # Get the DataType the Node works on
+        self.node_datatype_mode = self.extract_node_datatype_mode()
+
+        # Get the polygon if there is one.
+        self.regions_of_interest = self.get_regions_of_interest()
+
+        # Find the latest scenedata additions
+        self.latest_sd_version = self.get_latest_scenedata_version_number()
+
+        # Get the targets to work on
+        self.targets = self.get_scenedata_uri_list()
 
     def save_request(self, request_type : str, name : str):
         """
         Used for development purposes to manually check the request.
         Saves the request as a json to file
 
-        :param request_type: 'SM' for SceneMark, 'NS' for the NodeSequencer Address
+        :param request_type: 'SM' for SceneMark, 'NSH' for the NodeSequencerHeader
         :type request_type: string
         :param name: The name you want to save the json as. Defaults to "scenemark" or
-            "nodesequencer_address" based on request_type setting
+            "nodesequencer_header" based on request_type setting
         :type name: string
         """
-        assert request_type in ("SM", "NS")
+        assert request_type in ("SM", "NSH")
         if request_type == "SM":
             if not name:
                 name = "scenemark"
-            with open(f"{name}.json", 'w') as json_file:
+            with open(f"{name}.json", 'w', encoding="utf-8") as json_file:
                 json.dump(self.scenemark, json_file)
-        elif request_type == "NS":
+        elif request_type == "NSH":
             if not name:
-                name = "nodesequencer_address"
-            with open(f"{name}.json", 'w') as json_file:
-                json.dump(self.nodesequencer_address, json_file)
-
-    def request_json_validator(self, request, schema):
-        """
-        Used internally to validate incoming and outgoing requests.
-
-        :param request: the request json
-        :type request: json
-        :param schema: the schema found in the spec
-        :type schema: json
-        :raises ValidationError: Represents a JSON Schema validation error.
-        """
-        try:
-            jsonschema.validate(instance = request, schema = schema)
-        except jsonschema.exceptions.ValidationError as e:
-            raise jsonschema.exceptions.ValidationError(e.message)
-        return True
+                name = "nodesequencer_header"
+            with open(f"{name}.json", 'w', encoding="utf-8") as json_file:
+                json.dump(self.nodesequencer_header, json_file)
 
     def get_my_version_number(self):
         """
@@ -130,40 +121,95 @@ class SceneMark:
         :raises ValidationError: VersionControl is missing or malformed
         """
         try:
-            return max([vc_item['VersionNumber'] for vc_item in self.scenemark['VersionControl']['VersionList']]) + 1.0
-        except:
-            raise ValidationError("The VersionControl item is missing or malformed")
+            return max([vc_item['VersionNumber']  \
+                for vc_item in self.scenemark['VersionControl']['VersionList']]) + 1.0
+        except ValidationError as _e:
+            raise ValidationError("The VersionControl item is missing or malformed") from _e
 
-    def get_scenedata_datatype_uri_dict(self):
+    def extract_node_datatype_mode(self):
         """
-        Creates a dictionary that has the datatype as key, and the uri as value,
+        Used internally to extract the DataType the Node should work on.
+
+        :return: DataType, defaults to RGBStill
+        :rtype: string
+        """
+        try:
+            datatype_index = self.nodesequencer_header['NodeInput']['DataTypeMode']
+        # We default to using the RGBStill image in case it is not defined
+        except KeyError:
+            datatype_index = 1
+        return Spec.DataTypeEnumDict[datatype_index]
+
+    def get_regions_of_interest(self):
+        """
+        Extracts the polygon from the node input object in a list of lists as follows:
+
+        :Example:
+
+        [ [ (1, 2), (3, 4), (5, 6) ], [ (7, 8), (9, 10), (11, 12), (13, 14), (15, 16) ] ]
+
+        :return: regions of interest coordinates
+        :rtype: a list of lists, containing tuples
+        """
+        try:
+            regions = []
+            for polygon in self.nodesequencer_header['NodeInput']['RegionsOfInterest']:
+                region = [(coord['X'],coord['Y']) for coord in polygon['Polygon']]
+                if len(region) >= 3:
+                    regions.append(region)
+                else:
+                    print("There is a region with fewer than 3 coordinates. Discarding.")
+            return regions
+        except KeyError:
+            return []
+
+    def get_latest_scenedata_version_number(self):
+        """
+        Get latest SceneData VersionNumber. This is what the Node should run on.
+
+        :return: VersionNumber
+        :rtype: float
+        """
+        try:
+            return max([sd_item['VersionNumber'] for sd_item in self.scenemark['SceneDataList']])
+        except KeyError:
+            print("There is no SceneData attached to this SceneMark.")
+            return 0.0
+
+    def get_scenedata_uri_list(self):
+        """
+        Creates a list that contains all the URIs
         like so:
 
         :Example:
 
-        {\n
-        'Thumbnail': https://scenedatauri.example.com/1234_thumb.jpg,\n
-        'RGBStill': https://scenedatauri.example.com/1234_still.jpg,\n
-        'RGBVideo': https://scenedatauri.example.com/1234_vid.mp4,\n
-        }
+        [\n
+            https://scenedatauri.example.com/1234_still.jpg,\n
+            https://scenedatauri.example.com/1234_still2.jpg\n
+        ]
 
-        :return: dictionary of {datatype -> scenedata_uri}
-        :rtype: dict
+        :return: List of target SceneData URIs
+        :rtype: list
         """
-        return {scenedata_item['DataType']:scenedata_item['SceneDataURI'] \
-            for scenedata_item in self.scenemark['SceneDataList']}
+        return [scenedata_item['SceneDataURI'] \
+            for scenedata_item in self.scenemark['SceneDataList'] \
+                if (scenedata_item['DataType'] == self.node_datatype_mode) and \
+                    (scenedata_item['VersionNumber'] == self.latest_sd_version)]
 
     def get_scenedata_id_uri_dict(self):
         """
-        Creates a dictionary that has the datatype as key, and the uri as value,
+        Creates a dictionary that has the SceneDataID as key, and the SceneDataURI as the value.
         like so:
 
         :Example:
 
         {\n
-            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac01': https://scenedatauri.example.com/1234_thumb.jpg,\n
-            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac02': https://scenedatauri.example.com/1234_still.jpg,\n
-            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac03': https://scenedatauri.example.com/1234_vid.mp4,\n
+            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac01':\n
+                'https://scenedatauri.example.com/1234_thumb.jpg',\n
+            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac02':\n
+                'https://scenedatauri.example.com/1234_still.jpg',\n
+            'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac03':\n
+                https://scenedatauri.example.com/1234_vid.mp4',\n
         }
 
         :return: dictionary of {scenedata_id -> scenedata_uri}
@@ -172,32 +218,25 @@ class SceneMark:
         return {scenedata_item['SceneDataID']:scenedata_item['SceneDataURI'] \
             for scenedata_item in self.scenemark['SceneDataList']}
 
-    def get_scenedata_uri_list(self, exclude_thumbnail = False):
+    def get_uri_scenedata_id_dict(self):
         """
-        Creates a list that contains all the URIs
+        Creates a dictionary that has the SceneDataURI as the key, and the SceneDataID as the value.
         like so:
 
-        :Example:
+        {\n
+            'https://scenedatauri.example.com/1234_thumb.jpg':\n
+                'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac01',\n
+            'https://scenedatauri.example.com/1234_still.jpg':\n
+                'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac02',\n
+            'https://scenedatauri.example.com/1234_vid.mp4':\n
+                'SDT_4f2b308f-851a-43ae-819a-0a255dc194a0_dd37_73ac03',\n
+        }
 
-        [\n
-            https://scenedatauri.example.com/1234_thumb.jpg,\n
-            https://scenedatauri.example.com/1234_still.jpg,\n
-            https://scenedatauri.example.com/1234_vid.mp4\n
-        ]
-
-        :param exclude_thumbnail: Excludes the 'Thumbnail' DataType from the list, defaults to False. Optional.
-        :type exclude_thumbnail: bool
-
-        :return: List of SceneData URIs
-        :rtype: list
+        :return: dictionary of {scenedata_uri -> scenedata_id}
+        :rtype: dict
         """
-        if exclude_thumbnail:
-            return [scenedata_item['SceneDataURI'] \
-                for scenedata_item in self.scenemark['SceneDataList'] \
-                    if scenedata_item['DataType'] != 'Thumbnail']
-        else:
-            return [scenedata_item['SceneDataURI'] \
-                for scenedata_item in self.scenemark['SceneDataList']]
+        return {scenedata_item['SceneDataURI']:scenedata_item['SceneDataID'] \
+            for scenedata_item in self.scenemark['SceneDataList']}
 
     def get_id_from_uri(self, uri : str):
         """
@@ -208,14 +247,13 @@ class SceneMark:
 
         :return: SceneDataID corresponding to the URI
         :rtype: string
-        :raises ValidationError: "No match" if there isn't a match
         """
         for scenedata in self.scenemark['SceneDataList']:
             if scenedata['SceneDataURI'] == uri:
                 return scenedata['SceneDataID']
-        raise ValidationError("No match found")
+        return "No SceneDataID found!"
 
-    def get_uri_from_id(self, id : str):
+    def get_uri_from_id(self, scenedata_id : str):
         """
         Gets the SceneDataURI of the SceneDataID you put in.
 
@@ -227,7 +265,7 @@ class SceneMark:
         :raises ValidationError: "No match" if there isn't a match
         """
         for scenedata in self.scenemark['SceneDataList']:
-            if scenedata['SceneDataID'] == id:
+            if scenedata['SceneDataID'] == scenedata_id:
                 return scenedata['SceneDataURI']
         raise ValidationError("No match found")
 
@@ -244,29 +282,30 @@ class SceneMark:
         """
         return f"SDT_{self.node_id}_0001_{self.generate_random_id(6)}"
 
+    @staticmethod
     def generate_bounding_box(
-        self,
-        xc : int,
-        yc : int,
-        height : int,
-        width: int,
+        x_c : float,
+        y_c : float,
+        height : float,
+        width: float,
         ):
         """
         Generates a Bounding Box using coordinates (from e.g. YOLO)
+        Can take both pixels and relative coordinates. The latter is preferred.
 
         :Example:
 
         {\n
-            "XCoordinate": 10,\n
-            "YCoordinate": 30,\n
-            "Height": 400,\n
-            "Width": 400\n
+            "XCoordinate": 0.12,\n
+            "YCoordinate": 0.3,\n
+            "Height": 0.53,\n
+            "Width": 0.39\n
         }
 
-        :param xc: Top-left x coordinate
-        :type xc: int
-        :param yc: Top-left y coordinate
-        :type yc: int
+        :param x_c: Top-left x coordinate
+        :type x_c: int
+        :param y_c: Top-left y coordinate
+        :type y_c: int
         :param height: Height of the bounding box
         :type height: int
         :param width: Width of the bounding box
@@ -275,12 +314,15 @@ class SceneMark:
         :return: A dictionary bounding box object, see example
         :rtype: dict
         """
-        assert (type(xc) == type(yc) == type(height) == type(width) == int), \
+        assert (isinstance(x_c, float) \
+            and isinstance(y_c, float) \
+            and isinstance(height, float) \
+            and isinstance(width, float)), \
             "Arguments need to be integers"
 
         bounding_box_item = {}
-        bounding_box_item['XCoordinate'] = xc
-        bounding_box_item['YCoordinate'] = yc
+        bounding_box_item['XCoordinate'] = x_c
+        bounding_box_item['YCoordinate'] = y_c
         bounding_box_item['Height'] = height
         bounding_box_item['Width'] = width
 
@@ -293,7 +335,7 @@ class SceneMark:
         probability_of_attribute : float = 1.0,
         ):
         """
-        Generates an Attribute list item, to specify Attributes found
+        Generates an Attribute list item, to Specify Attributes found
         associated with the Detected Object.
 
         :Example:
@@ -309,7 +351,8 @@ class SceneMark:
         :type attribute: string
         :param value: Value of the attribute
         :type value: string
-        :param probability_of_attribute: Confidence of the attribute found, optional, defaulted to 1.0 == 100%
+        :param probability_of_attribute: Confidence of the attribute found,
+            optional, defaulted to 1.0 == 100%
         :type probability_of_attribute: float
 
         :return: attribute item
@@ -324,8 +367,8 @@ class SceneMark:
 
         return attribute_item
 
+    @staticmethod
     def generate_detected_object_item(
-        self,
         nice_item_type : str,
         related_scenedata_id : str,
         custom_item_type : str = "",
@@ -367,11 +410,14 @@ class SceneMark:
         :type nice_item_type: string
         :param related_scenedata_id: Indication of what item the algorithm ran on
         :type related_scenedata_id: string
-        :param custom_item_type: Allows specifying of the custom NICEItemType, defaults to "". Optional.
+        :param custom_item_type: Allows specifying of the custom NICEItemType,
+            defaults to "". Optional.
         :type custom_item_type: string
-        :param item_id: Indicating an ID on the object. E.g. Name of the person Defaults to "". Optional.
+        :param item_id: Indicating an ID on the object.
+            E.g. Name of the person Defaults to "". Optional.
         :type item_id: string
-        :param item_type_count: Counting the amount of the stated NICEItemType, optional, defaults to 1,
+        :param item_type_count: Counting the amount of the stated NICEItemType,
+            optional, defaults to 1,
         :type item_type_count: int
         :param probability: Indicating the confidence on the item. Optional, defaults to 1.0.
         :type probability: float
@@ -382,7 +428,9 @@ class SceneMark:
         :return: dictionary containing a DetectedObject item, see example.
         :rtype: dict
         """
-        assert nice_item_type in NICEItemType, "This Item Type is not part of the spec."
+        # pylint: disable=dangerous-default-value
+
+        assert nice_item_type in Spec.NICEItemType, "This Item Type is not part of the Spec."
 
         detected_object = {}
         detected_object['NICEItemType'] = nice_item_type
@@ -434,22 +482,25 @@ class SceneMark:
         :type error_message: string
         :param detected_objects: Holds detected objects, defaults to an empty list
         :type detected_objects: list
-        :param event_type: Set internally by the constructor, but may be altered for custom purposes. Optional.
+        :param event_type: Set internally by the constructor, may be altered for custom purposes.
+            Optional.
         :type event_type: string
 
-        :raises AssertionError: When the ProcessingStatus is not recognized as part of the spec.
-        :raises AssertionError: When the EventType is not recognized as part of the spec.
+        :raises AssertionError: When the ProcessingStatus is not recognized as part of the Spec.
+        :raises AssertionError: When the EventType is not recognized as part of the Spec.
         """
+        # pylint: disable=dangerous-default-value
+
         analysis_list_item = {}
         analysis_list_item['VersionNumber'] = self.my_version_number
 
-        assert processing_status in ProcessingStatus, \
-            "This Processing Status is not part of the spec."
+        assert processing_status in Spec.ProcessingStatus, \
+            "This Processing Status is not part of the Spec."
         analysis_list_item['ProcessingStatus'] = processing_status
 
         if event_type:
-            assert event_type in EventType, \
-            "This Event Type is not part of the spec."
+            assert event_type in Spec.EventType, \
+            "This Event Type is not part of the Spec."
             analysis_list_item['EventType'] = event_type
         else:
             analysis_list_item['EventType'] = self.event_type
@@ -546,8 +597,8 @@ class SceneMark:
         :param embedded_scenedata: Embedded scenedata, no idea what this is for to be honest
         :type embedded_scenedata: string
         :raises AssertionError: "No SceneData URI is present."
-        :raises AssertionError: "This DataType is not part of the spec."
-        :raises AssertionError: "This Media Format is not part of the spec."
+        :raises AssertionError: "This DataType is not part of the Spec."
+        :raises AssertionError: "This Media Format is not part of the Spec."
         """
 
         scenedata_list_item = {}
@@ -563,8 +614,8 @@ class SceneMark:
         scenedata_list_item['Status'] = "Available at Provided URI"
 
         # Update the DataType
-        assert datatype in DataType, \
-            "This DataType is not part of the spec."
+        assert datatype in Spec.DataType, \
+            "This DataType is not part of the Spec."
         scenedata_list_item['DataType'] = datatype
 
         # If the DataType is a thumbnail, we update the ThumbnailList
@@ -574,8 +625,8 @@ class SceneMark:
         # You are allowed to set your own timestamp but will otherwise take the default
         scenedata_list_item['TimeStamp'] = timestamp if timestamp else self.my_timestamp
 
-        assert media_format in MediaFormat, \
-            "This Media Format is not part of the spec."
+        assert media_format in Spec.MediaFormat, \
+            "This Media Format is not part of the Spec."
         scenedata_list_item['MediaFormat'] = media_format if media_format else 'UNSPECIFIED'
 
         # This equals the Node ID that is assigned to your node
@@ -588,6 +639,25 @@ class SceneMark:
         scenedata_list_item['EmbeddedSceneData'] = embedded_scenedata
 
         self.scenemark['SceneDataList'].append(scenedata_list_item)
+
+    def update_scenedata_item(self, scenedata_id, key, value):
+        """
+        Updates existing SceneData pieces, to for example update its VersionNumber
+
+        :param scenedata_id: SceneDataID of the item you want to change
+        :param key: the key that needs changing
+        :param value: the value that this key should take
+        """
+        try:
+            for sd_item in self.scenemark['SceneDataList']:
+                if sd_item['SceneDataID'] == scenedata_id:
+                    if sd_item[key]:
+                        sd_item_for_change = sd_item
+                        break
+
+            sd_item_for_change[key] = value
+        except KeyError as _e:
+            raise KeyError("Can't update the SceneData item") from _e
 
     def add_version_control_item(self):
         """
@@ -628,25 +698,27 @@ class SceneMark:
             some other app, defaults to False
         :type test: bool
         """
+        # pylint: disable=inconsistent-return-statements
+
         # Update our original request with the updated SceneMark
-        self.request_json_validator(self.scenemark, SceneMarkSchema)
+        request_json_validator(self.scenemark, Spec.SceneMarkSchema)
 
         scenemark = json.dumps(self.scenemark)
         if test:
             return scenemark
 
         # We add the token to the HTTP header.
-        ns_header = {'Authorization': 'Bearer ' + self.nodesequencer_address['Token'],
+        ns_header = {'Authorization': 'Bearer ' + self.nodesequencer_header['Token'],
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'}
 
         verify = False
-        if self.nodesequencer_address['Ingress'].startswith("https"):
+        if self.nodesequencer_header['Ingress'].startswith("https"):
             verify = True
 
         # Call NodeSequencer with an updated SceneMark
         answer = requests.post(
-            self.nodesequencer_address['Ingress'],
+            self.nodesequencer_header['Ingress'],
             data=scenemark,
             headers=ns_header,
             verify=verify,
@@ -654,15 +726,33 @@ class SceneMark:
         print("Returning to Node Sequencer", answer)
 
     # Helper Functions
-    def get_current_utc_timestamp(self):
+    @staticmethod
+    def get_current_utc_timestamp():
         """
         Helper function to create a UTC timestamp in the required format.
-        """
-        return f"{'{:%Y-%m-%dT%H:%M:%S.%f}'.format(datetime.datetime.utcnow())[:-3]}Z"
 
-    def generate_random_id(self, length):
+        :Example:
+        '2022-03-14T15:43:04.010Z'
+
+        """
+        time = str(datetime.datetime.utcnow())
+        time = time[:-3]
+        time = time.replace(" ","T")
+        time = time + "Z"
+        return time
+
+    @staticmethod
+    def generate_random_id(length):
         """
         Helper function to create a random ID
         """
-        return ''.join([random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for n in range(length)])
+        return ''.join([random.choice('0123456789abcdefghijklmnopqrstuvwxyz') \
+            for _ in range(length)])
 
+class ValidationError(Exception):
+    """
+    Self-defined error to raise when the values do not match.
+    """
+    def __init__(self, msg):
+        _ = super().__init__()
+        self.msg = msg

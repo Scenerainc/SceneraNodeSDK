@@ -35,19 +35,19 @@ class SceneMarkTestCase(unittest.TestCase):
         self.assertTrue(
             self.sm.request_json_validator(
                 self.sm.scenemark,
-                spec.SceneMarkSchema))
+                spec.Spec.SceneMarkSchema))
 
     def incorrect_nodesequencer_address_json_raises_error(self):
         with self.assertRaises(jsonschema.exceptions.ValidationError):
             self.sm.request_json_validator(
                 {"Some_incorrect_schema": "fails"},
-                spec.NodesequencerAddressSchema)
+                spec.Spec.NodesequencerAddressSchema)
 
     def correct_nodesequencer_address_json_passes(self):
         self.assertTrue(
             self.sm.request_json_validator(
                 self.sm.nodesequencer_address,
-                spec.NodesequencerAddressSchema))
+                spec.Spec.NodesequencerAddressSchema))
 
     def test_get_my_version_number(self):
         # Set to 4.0 because the initialisation has already
@@ -57,11 +57,22 @@ class SceneMarkTestCase(unittest.TestCase):
         #This can be left at 3.0 because it's the class attribute
         self.assertEqual(self.sm.my_version_number, 3.0)
 
-    def test_get_scenedata_datatype_uri_dict(self):
-        datatype_uri_dict = self.sm.get_scenedata_datatype_uri_dict()
-        self.assertEqual(datatype_uri_dict['Thumbnail'], 'https://sduri.example.com/thumb.jpg')
-        self.assertEqual(datatype_uri_dict['RGBStill'], 'https://sduri.example.com/still.jpg')
-        self.assertEqual(datatype_uri_dict['RGBVideo'], 'https://sduri.example.com/vid.mp4')
+    def test_extract_node_datatype_mode(self):
+        self.assertEqual(self.sm.extract_node_datatype_mode(), 'RGBVideo')
+
+    def test_extra_node_datatype_mode_missing_setting(self):
+        self.sm.nodesequencer_header['NodeInput'] = {}
+        self.assertEqual(self.sm.extract_node_datatype_mode(), 'RGBStill')
+
+    def test_get_regions_of_interest(self):
+        regions_of_interest = [
+            [(0.1, 0.2),(0.3, 0.4),(0.5, 0.6)],
+            [(0.7, 0.8),(0.9, 0.10),(0.11, 0.12),(0.13,0.14),(0.15,0.16),(0.17,0.18)]
+            ]
+        self.assertEqual(regions_of_interest, self.sm.get_regions_of_interest())
+
+    def test_get_latest_scenedata_version_number(self):
+        self.assertEqual(self.sm.get_latest_scenedata_version_number(), 2.0)
 
     def test_get_scenedata_id_to_uri_dict(self):
         sd_id_uri_dict = self.sm.get_scenedata_id_uri_dict()
@@ -76,15 +87,9 @@ class SceneMarkTestCase(unittest.TestCase):
             'https://sduri.example.com/vid.mp4')
 
     def test_get_scenedata_uri_list(self):
+        self.sm.node_datatype_mode = "RGBStill"
         uri_list = self.sm.get_scenedata_uri_list()
-        self.assertEqual(uri_list[0], 'https://sduri.example.com/thumb.jpg')
-        self.assertEqual(uri_list[1], 'https://sduri.example.com/still.jpg')
-        self.assertEqual(uri_list[2], 'https://sduri.example.com/vid.mp4')
-
-    def test_get_scenedata_uri_list_exclude_thumb(self):
-        uri_list = self.sm.get_scenedata_uri_list(True)
-        self.assertEqual(uri_list[0], 'https://sduri.example.com/still.jpg')
-        self.assertEqual(uri_list[1], 'https://sduri.example.com/vid.mp4')
+        self.assertEqual(uri_list[0], 'https://sduri.example.com/still2.jpg')
 
     def test_get_id_from_uri(self):
         thumb = self.sm.get_id_from_uri('https://sduri.example.com/thumb.jpg')
@@ -112,11 +117,11 @@ class SceneMarkTestCase(unittest.TestCase):
         self.assertEqual(ref[:23], sd_id[:23])
 
     def test_generate_bounding_box(self):
-        bounding_box = self.sm.generate_bounding_box(1,2,3,4)
-        self.assertEqual(bounding_box['XCoordinate'], 1)
-        self.assertEqual(bounding_box['YCoordinate'], 2)
-        self.assertEqual(bounding_box['Height'], 3)
-        self.assertEqual(bounding_box['Width'], 4)
+        bounding_box = self.sm.generate_bounding_box(0.1,0.2,0.3,0.4)
+        self.assertEqual(bounding_box['XCoordinate'], 0.1)
+        self.assertEqual(bounding_box['YCoordinate'], 0.2)
+        self.assertEqual(bounding_box['Height'], 0.3)
+        self.assertEqual(bounding_box['Width'], 0.4)
 
     def test_generate_bounding_box_wrong_datatype_fail(self):
         with self.assertRaises(AssertionError):
@@ -143,7 +148,7 @@ class SceneMarkTestCase(unittest.TestCase):
             3,
             0.3,
             [self.sm.generate_attribute_item('mood', 'anger', 0.82)],
-            self.sm.generate_bounding_box(1,2,3,4)
+            self.sm.generate_bounding_box(0.1,0.2,0.3,0.4)
         )
         self.assertEqual(detected_object['NICEItemType'],'Human')
         self.assertEqual(detected_object['RelatedSceneData'],'scenedata-id')
@@ -157,10 +162,10 @@ class SceneMarkTestCase(unittest.TestCase):
         self.assertEqual(detected_object['Attributes'][0]['Value'], 'anger')
         self.assertEqual(detected_object['Attributes'][0]['ProbabilityOfAttribute'],
             0.82)
-        self.assertEqual(detected_object['BoundingBox']['XCoordinate'],1)
-        self.assertEqual(detected_object['BoundingBox']['YCoordinate'],2)
-        self.assertEqual(detected_object['BoundingBox']['Height'],3)
-        self.assertEqual(detected_object['BoundingBox']['Width'],4)
+        self.assertEqual(detected_object['BoundingBox']['XCoordinate'],0.1)
+        self.assertEqual(detected_object['BoundingBox']['YCoordinate'],0.2)
+        self.assertEqual(detected_object['BoundingBox']['Height'],0.3)
+        self.assertEqual(detected_object['BoundingBox']['Width'],0.4)
 
     def test_generate_detected_object_item_fail_false_item_type(self):
         with self.assertRaises(AssertionError):
@@ -216,6 +221,17 @@ class SceneMarkTestCase(unittest.TestCase):
                 [],
                 'IncorrectEventType'
                 )
+
+    def test_update_scendata_item(self):
+        self.sm.update_scenedata_item("SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_8a7d01", "VersionNumber", 4.0)
+        self.assertEqual(self.sm.scenemark['SceneDataList'][0]['VersionNumber'], 4.0)
+
+    def test_update_scenedata_item_wrong_key_value(self):
+        with self.assertRaises(KeyError):
+            self.sm.update_scenedata_item(
+                "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_8a7d01",
+                "Lalala",
+                "Lololo")
 
     def test_add_thumbnail_list_item(self):
         self.sm.add_thumbnail_list_item('some-scenedata-id')
@@ -434,16 +450,86 @@ class Request:
                             "SceneEncryptionKeyID": None,
                             "PrivacyServerEndPoint": None
                         }
+                    },
+                    {
+                        "VersionNumber": 2.0,
+                        "SceneDataID": "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f204",
+                        "TimeStamp": "2021-10-29T21:12:17.245Z",
+                        "SourceNodeID": "83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7",
+                        "SourceNodeDescription": "Scenera Bridge",
+                        "Duration": "",
+                        "DataType": "RGBStill",
+                        "Status": "Available at Provided URI",
+                        "MediaFormat": "JPEG",
+                        "SceneDataURI": "https://sduri.example.com/still2.jpg",
+                        "Resolution": {
+                            "Height": 100,
+                            "Width": 100
+                        },
+                        "EmbeddedSceneData": None,
+                        "Encryption": {
+                            "EncryptionOn": False,
+                            "SceneEncryptionKeyID": None,
+                            "PrivacyServerEndPoint": None
+                        }
                     }
                 ],
                 "SceneModeConfig": None
             },
-            "NodeSequencerAddress": {
+            "NodeSequencerHeader": {
                 "Ingress": "http://localhost:5008/nodesequencer/1.0/setscenemark",
-                "Token": "example-token-kjasdfpoisdjfpoiasdjfoipasjfopiasjdfpo"
+                "Token": "example-token-kjasdfpoisdjfpoiasdjfoipasjfopiasjdfpo",
+                "NodeInput": {
+                    "DataTypeMode": 6,
+                    "RegionsOfInterest": [
+                        {
+                            "Polygon": [
+                                {
+                                    "X": 0.1,
+                                    "Y": 0.2
+                                },
+                                {
+                                    "X": 0.3,
+                                    "Y": 0.4
+                                },
+                                {
+                                    "X": 0.5,
+                                    "Y": 0.6
+                                }
+                            ]
+                        },
+                        {
+                            "Polygon": [
+                                {
+                                    "X": 0.7,
+                                    "Y": 0.8
+                                },
+                                {
+                                    "X": 0.9,
+                                    "Y": 0.10
+                                },
+                                {
+                                    "X": 0.11,
+                                    "Y": 0.12
+                                },
+                                {
+                                    "X": 0.13,
+                                    "Y": 0.14
+                                },
+                                {
+                                    "X": 0.15,
+                                    "Y": 0.16
+                                },
+                                {
+                                    "X": 0.17,
+                                    "Y": 0.18
+                                }
+                            ]
+                        }
+                    ]
+                }
             }
         }
-
 
 if __name__ == '__main__':
     unittest.main()

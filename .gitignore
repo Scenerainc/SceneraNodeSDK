@@ -3,6 +3,8 @@
 .DS_Store
 docs/source/_*
 docs/build/html/_*
+testnode.py
+*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

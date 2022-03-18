@@ -196,7 +196,7 @@ class SceneMark:
                 if (scenedata_item['DataType'] == self.node_datatype_mode) and \
                     (scenedata_item['VersionNumber'] == self.latest_sd_version)]
 
-    def get_scenedata_id_uri_dict(self):
+    def get_scenedata_id_uri_dict(self, targets_only = True):
         """
         Creates a dictionary that has the SceneDataID as key, and the SceneDataURI as the value.
         like so:
@@ -215,10 +215,16 @@ class SceneMark:
         :return: dictionary of {scenedata_id -> scenedata_uri}
         :rtype: dict
         """
-        return {scenedata_item['SceneDataID']:scenedata_item['SceneDataURI'] \
-            for scenedata_item in self.scenemark['SceneDataList']}
+        if targets_only:
+            return {scenedata_item['SceneDataID']:scenedata_item['SceneDataURI'] \
+                for scenedata_item in self.scenemark['SceneDataList'] \
+                    if (scenedata_item['DataType'] == self.node_datatype_mode) and \
+                        (scenedata_item['VersionNumber'] == self.latest_sd_version)}
+        else:
+            return {scenedata_item['SceneDataID']:scenedata_item['SceneDataURI'] \
+                for scenedata_item in self.scenemark['SceneDataList']}
 
-    def get_uri_scenedata_id_dict(self):
+    def get_uri_scenedata_id_dict(self, targets_only = True):
         """
         Creates a dictionary that has the SceneDataURI as the key, and the SceneDataID as the value.
         like so:
@@ -235,8 +241,14 @@ class SceneMark:
         :return: dictionary of {scenedata_uri -> scenedata_id}
         :rtype: dict
         """
-        return {scenedata_item['SceneDataURI']:scenedata_item['SceneDataID'] \
-            for scenedata_item in self.scenemark['SceneDataList']}
+        if targets_only:
+            return {scenedata_item['SceneDataURI']:scenedata_item['SceneDataID'] \
+                for scenedata_item in self.scenemark['SceneDataList'] \
+                    if (scenedata_item['DataType'] == self.node_datatype_mode) and \
+                        (scenedata_item['VersionNumber'] == self.latest_sd_version)}
+        else:
+            return {scenedata_item['SceneDataURI']:scenedata_item['SceneDataID'] \
+                for scenedata_item in self.scenemark['SceneDataList']}
 
     def get_id_from_uri(self, uri : str):
         """

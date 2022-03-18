@@ -2,6 +2,7 @@
 Unit-tests for the Node AI SDK
 """
 
+
 import unittest
 import jsonschema
 from scenera.node import SceneMark, ValidationError, spec
@@ -75,7 +76,7 @@ class SceneMarkTestCase(unittest.TestCase):
         self.assertEqual(self.sm.get_latest_scenedata_version_number(), 2.0)
 
     def test_get_scenedata_id_to_uri_dict(self):
-        sd_id_uri_dict = self.sm.get_scenedata_id_uri_dict()
+        sd_id_uri_dict = self.sm.get_scenedata_id_uri_dict(targets_only=False)
         self.assertEqual(
             sd_id_uri_dict['SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_8a7d01'],
             'https://sduri.example.com/thumb.jpg')
@@ -85,6 +86,45 @@ class SceneMarkTestCase(unittest.TestCase):
         self.assertEqual(
             sd_id_uri_dict['SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f203'],
             'https://sduri.example.com/vid.mp4')
+        self.assertEqual(
+            sd_id_uri_dict['SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f205'],
+            'https://sduri.example.com/vid2.mp4')
+
+    def test_get_scenedata_id_to_uri_dict_only_target(self):
+        self.sm.node_datatype_mode = "RGBVideo"
+        sd_id_uri_dict = self.sm.get_scenedata_id_uri_dict(targets_only=True)
+        self.assertEqual(
+            sd_id_uri_dict['SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f205'],
+            'https://sduri.example.com/vid2.mp4')
+        with self.assertRaises(KeyError):
+            _ = sd_id_uri_dict['SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_8a7d01']
+        with self.assertRaises(KeyError):
+            _ = sd_id_uri_dict['SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_4ef702']
+
+    def test_get_uri_scenedata_id_dict(self):
+        sd_id_uri_dict = self.sm.get_uri_scenedata_id_dict(targets_only=False)
+        self.assertEqual(
+            sd_id_uri_dict['https://sduri.example.com/thumb.jpg'],
+            'SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_8a7d01')
+        self.assertEqual(
+            sd_id_uri_dict['https://sduri.example.com/still.jpg'],
+            'SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_4ef702')
+        self.assertEqual(
+            sd_id_uri_dict['https://sduri.example.com/vid.mp4'],
+            'SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f203')
+        self.assertEqual(
+            sd_id_uri_dict['https://sduri.example.com/vid2.mp4'],
+            'SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f205')
+
+    def test_get_uri_scenedata_id_dict_only_target(self):
+        sd_id_uri_dict = self.sm.get_uri_scenedata_id_dict(targets_only=True)
+        with self.assertRaises(KeyError):
+            _ = sd_id_uri_dict['https://sduri.example.com/thumb.jpg']
+        with self.assertRaises(KeyError):
+            _ = sd_id_uri_dict['https://sduri.example.com/still.jpg']
+        self.assertEqual(
+            sd_id_uri_dict['https://sduri.example.com/vid2.mp4'],
+            'SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f205')
 
     def test_get_scenedata_uri_list(self):
         self.sm.node_datatype_mode = "RGBStill"
@@ -430,7 +470,7 @@ class Request:
                         }
                     },
                     {
-                        "VersionNumber": 1.0,
+                        "VersionNumber": .0,
                         "SceneDataID": "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f203",
                         "TimeStamp": "2021-10-29T21:12:17.245Z",
                         "SourceNodeID": "83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7",
@@ -440,6 +480,28 @@ class Request:
                         "Status": "Upload in Progress",
                         "MediaFormat": "H.264",
                         "SceneDataURI": "https://sduri.example.com/vid.mp4",
+                        "Resolution": {
+                            "Height": 100,
+                            "Width": 100
+                        },
+                        "EmbeddedSceneData": None,
+                        "Encryption": {
+                            "EncryptionOn": False,
+                            "SceneEncryptionKeyID": None,
+                            "PrivacyServerEndPoint": None
+                        }
+                    },
+                    {
+                        "VersionNumber": 2.0,
+                        "SceneDataID": "SDT_83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7_80f205",
+                        "TimeStamp": "2021-10-29T21:12:17.245Z",
+                        "SourceNodeID": "83d6a043-00d9-49aa-a295-86a041fff6d8_d3e7",
+                        "SourceNodeDescription": "Scenera Bridge",
+                        "Duration": "30",
+                        "DataType": "RGBVideo",
+                        "Status": "Upload in Progress",
+                        "MediaFormat": "H.264",
+                        "SceneDataURI": "https://sduri.example.com/vid2.mp4",
                         "Resolution": {
                             "Height": 100,
                             "Width": 100

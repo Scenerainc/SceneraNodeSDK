@@ -52,7 +52,7 @@ class Spec:
         "Animal",
         "TextLogoQRCode",
         "Custom",
-        "Scene"
+        "Scene",
         "Undefined"])
 
     ProcessingStatus = frozenset([

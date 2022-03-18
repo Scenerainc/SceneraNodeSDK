@@ -2,7 +2,6 @@
 Unit-tests for the Node AI SDK
 """
 
-
 import unittest
 import jsonschema
 from scenera.node import SceneMark, ValidationError, spec
@@ -12,19 +11,11 @@ class SceneMarkTestCase(unittest.TestCase):
     def setUp(self):
         self.sm = SceneMark(
             Request(),
-            node_id = "unit_test_node",
-            event_type = "Custom",
-            custom_event_type = "Unit Test Event",
-            analysis_description = "Unit Test",
-            analysis_id = "83723ea6-9907-409d-86ea-01499c26841c"
+            node_id = "unit_test_node"
         )
 
     def test_internal_settings(self):
         self.assertEqual(self.sm.node_id, "unit_test_node")
-        self.assertEqual(self.sm.event_type, "Custom")
-        self.assertEqual(self.sm.custom_event_type, "Unit Test Event")
-        self.assertEqual(self.sm.analysis_description, "Unit Test")
-        self.assertEqual(self.sm.analysis_id, "83723ea6-9907-409d-86ea-01499c26841c")
 
     def incorrect_scenemark_json_raises_error(self):
         with self.assertRaises(jsonschema.exceptions.ValidationError):
@@ -223,22 +214,27 @@ class SceneMarkTestCase(unittest.TestCase):
     def test_add_analysis_list_item(self):
         self.sm.add_analysis_list_item(
             'Detected',
+            'Custom',
             'custom-event-type',
+            'a-descr',
+            'a-id',
             4,
             'some error happened',
             ['filler'],
-            'Loitering'
         )
         self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['VersionNumber'],
             self.sm.my_version_number)
         self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['ProcessingStatus'], 'Detected')
         self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['CustomEventType'],
             'custom-event-type')
+
+        self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['AnalysisDescription'], 'a-descr')
+        self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['AnalysisID'], 'a-id')
+
         self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['TotalItemCount'], 4)
         self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['ErrorMessage'],
             'some error happened')
         self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['DetectedObjects'], ['filler'])
-        self.assertEqual(self.sm.scenemark['AnalysisList'][-1]['EventType'], 'Loitering')
 
     def test_add_analysis_list_item_false_processing_status(self):
         with self.assertRaises(AssertionError):

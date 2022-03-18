@@ -22,33 +22,12 @@ class SceneMark:
     :param node_id: Environment variable assigned to the Node through the Developer Portal.
         The Node ID is the unique identifier of the Node.
     :type node_id: string
-    :param event_type: Environment variable assigned to the Node through the Developer Portal.
-        The main thing this Node is 'interested in'. Can take the following range of values from
-        the Specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence, Fire,
-        Abandonment, SpeedGate, Xray, Facility
-    :type event_type: string
-    :param custom_event_type: Set when the EventType is set to 'Custom', defaults to "". Optional
-    :type custom_event_type: string
-    :param analysis_description: string, default "", env variable assigned to the Node
-        through the Developer Portal. Used to describe what the analysis is about,
-        what it is 'doing'. By default set to an empty string. Optional.
-    :type analysis_description: string
-    :param analysis_id: Environment variable assigned to the Node through the Developer Portal.
-        Should be a unique identifier refering to the particular algorithm
-        used within the node. Defaults to "". Optional.
-    :type analysis_id: string
     """
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-arguments
     # pylint: disable=too-many-public-methods
     def __init__ (
         self,
         request,
         node_id : str,
-        event_type : str,
-        custom_event_type : str = "",
-        analysis_description : str = "",
-        analysis_id : str = "",
         ):
 
         # Verify SceneMark input to match the Spec
@@ -61,11 +40,6 @@ class SceneMark:
 
         # Set assigned Node parameters
         self.node_id = node_id
-        assert event_type in Spec.EventType, "EventType given not in Spec"
-        self.event_type = event_type
-        self.custom_event_type = custom_event_type
-        self.analysis_description = analysis_description
-        self.analysis_id = analysis_id
 
         # Get the number of the current node in the NodeSequence
         self.my_version_number = self.get_my_version_number()
@@ -458,12 +432,14 @@ class SceneMark:
 
     def add_analysis_list_item(
         self,
-        processing_status,
+        processing_status : str,
+        event_type : str,
         custom_event_type : str = "",
+        analysis_description : str = "",
+        analysis_id : str = "",
         total_item_count : int = 0,
         error_message : str = "",
         detected_objects : list = [],
-        event_type : str = "",
         ):
         """
         Updates the SceneMark state with the unique analysis list item that is added by an AI Node.
@@ -486,22 +462,34 @@ class SceneMark:
         :param processing_status: One the following values: 'CustomAnalysis', 'Motion', 'Detected',
             'Recognized', 'Characterized', 'Undetected', 'Failed', 'Error'
         :type processing_status: string
-        :param custom_event_type: Define your event when your EventType is 'Custom'
+        :param event_type: Environment variable assigned to the Node through the Developer Portal.
+            The main thing this Node is 'interested in'. Can take the following range of values from
+            the Specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence, Fire,
+            Abandonment, SpeedGate, Xray, Facility
+        :type event_type: string
+        :param custom_event_type: Set when the EventType is set to 'Custom', defaults to "". Optional
         :type custom_event_type: string
+        :param analysis_description: string, default "", env variable assigned to the Node
+            through the Developer Portal. Used to describe what the analysis is about,
+            what it is 'doing'. By default set to an empty string. Optional.
+        :type analysis_description: string
+        :param analysis_id: Environment variable assigned to the Node through the Developer Portal.
+            Should be a unique identifier refering to the particular algorithm
+            used within the node. Defaults to "". Optional.
+        :type analysis_id: string
         :param total_item_count: Total amount of items detected in the scene, defaults to 0
         :type total_item_count: int
         :param error_message: Used to propagate errors, optional, defaults to ""
         :type error_message: string
         :param detected_objects: Holds detected objects, defaults to an empty list
         :type detected_objects: list
-        :param event_type: Set internally by the constructor, may be altered for custom purposes.
-            Optional.
-        :type event_type: string
 
         :raises AssertionError: When the ProcessingStatus is not recognized as part of the Spec.
         :raises AssertionError: When the EventType is not recognized as part of the Spec.
         """
         # pylint: disable=dangerous-default-value
+
+        assert event_type in Spec.EventType, "EventType given not in Spec"
 
         analysis_list_item = {}
         analysis_list_item['VersionNumber'] = self.my_version_number
@@ -510,20 +498,10 @@ class SceneMark:
             "This Processing Status is not part of the Spec."
         analysis_list_item['ProcessingStatus'] = processing_status
 
-        if event_type:
-            assert event_type in Spec.EventType, \
-            "This Event Type is not part of the Spec."
-            analysis_list_item['EventType'] = event_type
-        else:
-            analysis_list_item['EventType'] = self.event_type
-
-        if custom_event_type:
-            analysis_list_item['CustomEventType'] = custom_event_type
-        else:
-            analysis_list_item['CustomEventType'] = self.custom_event_type
-
-        analysis_list_item['AnalysisID'] = self.analysis_id
-        analysis_list_item['AnalysisDescription'] = self.analysis_description
+        analysis_list_item['EventType'] = event_type
+        analysis_list_item['CustomEventType'] = custom_event_type
+        analysis_list_item['AnalysisID'] = analysis_id
+        analysis_list_item['AnalysisDescription'] = analysis_description
         analysis_list_item['ErrorMessage'] = str(error_message)
         analysis_list_item['TotalItemCount'] = total_item_count
         analysis_list_item['DetectedObjects'] = detected_objects

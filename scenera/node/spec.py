@@ -42,7 +42,8 @@ class Spec:
         "Abandonment",
         "SpeedGate",
         "Xray",
-        "Facility"
+        "Facility",
+        "Scheduled",
         ])
 
     NICEItemType = frozenset([
@@ -274,6 +275,7 @@ class Spec:
                             "type": "string",
                             "enum": [
                                 "ItemPresence",
+                                "RegionOfInterest",
                                 "Custom",
                                 "Loitering",
                                 "Intrusion",
@@ -283,7 +285,8 @@ class Spec:
                                 "Abandonment",
                                 "SpeedGate",
                                 "Xray",
-                                "Facility"
+                                "Facility",
+                                "Scheduled"
                             ]
                         },
                         "CustomEventType": {
@@ -344,7 +347,13 @@ class Spec:
                                             "TextLogoQRCode",
                                             "Animal",
                                             "Custom",
-                                            "Scene"
+                                            "Scene",
+                                            "Fire",
+                                            "Furniture",
+                                            "Bag",
+                                            "Accessory",
+                                            "Weapon",
+                                            "Undefined"
                                         ]
                                     },
                                     "CustomItemType": {

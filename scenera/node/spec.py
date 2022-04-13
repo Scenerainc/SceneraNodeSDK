@@ -32,6 +32,7 @@ class Spec:
     # pylint: disable=too-few-public-methods
     EventType = frozenset([
         "Custom",
+        "RegionOfInterest"
         "ItemPresence",
         "Loitering",
         "Intrusion",
@@ -41,7 +42,8 @@ class Spec:
         "Abandonment",
         "SpeedGate",
         "Xray",
-        "Facility"])
+        "Facility"
+        ])
 
     NICEItemType = frozenset([
         "Motion",
@@ -53,6 +55,11 @@ class Spec:
         "TextLogoQRCode",
         "Custom",
         "Scene",
+        "Fire",
+        "Accessory",
+        "Bag",
+        "Furniture",
+        "Weapon",
         "Undefined"])
 
     ProcessingStatus = frozenset([
@@ -150,6 +157,8 @@ class Spec:
     }
 
     # pylint: disable=line-too-long
+    NodeSequencerPublicKey = "MIIBCgKCAQEAwQJ0bZfrWHxmEaYA/sG6FLx64+yxpH4quK36/wVm4+xhlvF4V7bdvvb4jg5teUZkaGdF96EnW/wQhtLZoYU/YSkT9mCXdm5k/gB0LE22peWuNZ3xFDVm4/O0XD/+20X/h9pux2pbBN+X21zwnil97H8u5VLOcvzy+yiivBOSWicol2xS376xwzX/VZjouxqzMfqRofRGa60y+e4vMzeEdAsu+fSADUj3Zh27ua8d1K2fCEqfClHPFBMB/HbLT9AtJFWBTThJqIaHn6cHtx1/6hk5elenmzoOQA4DdoEIxCjdZ0kkOH/W3aa0GCSKdnuUPFSeg9QRVsV9aC1Kn4Xx4wIDAQAB"
+
     SceneMarkSchema = {
         "$schema": "http://json-schema.org/draft-06/schema#",
         "type": "object",
@@ -947,7 +956,10 @@ class Spec:
                             "http"
                         ]
                     },
-                    "Token": {
+                    "NodeSequencerToken": {
+                        "type": "string"
+                    },
+                    "NodeToken": {
                         "type": "string"
                     },
                     "NodeInput": {
@@ -956,6 +968,7 @@ class Spec:
                 },
                 "required": [
                     "Ingress",
+                    "NodeSequencerToken",
                     "Token"
                 ],
                 "title": "Welcome6"

@@ -977,7 +977,6 @@ class Spec:
                 },
                 "required": [
                     "Ingress",
-                    "NodeSequencerToken",
                     "Token"
                 ],
                 "title": "Welcome6"

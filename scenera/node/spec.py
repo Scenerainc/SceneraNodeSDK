@@ -965,7 +965,7 @@ class Spec:
                             "http"
                         ]
                     },
-                    "NodeSequencerToken": {
+                    "Token": {
                         "type": "string"
                     },
                     "NodeToken": {

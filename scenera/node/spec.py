@@ -32,7 +32,7 @@ class Spec:
     # pylint: disable=too-few-public-methods
     EventType = frozenset([
         "Custom",
-        "RegionOfInterest"
+        "RegionOfInterest",
         "ItemPresence",
         "Loitering",
         "Intrusion",

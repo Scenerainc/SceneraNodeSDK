@@ -11,7 +11,8 @@ class SceneMarkTestCase(unittest.TestCase):
     def setUp(self):
         self.sm = SceneMark(
             Request(),
-            node_id = "unit_test_node"
+            node_id = "unit_test_node",
+            disable_token_verification = True
         )
 
     def test_internal_settings(self):
@@ -537,6 +538,7 @@ class Request:
             "NodeSequencerHeader": {
                 "Ingress": "http://localhost:5008/nodesequencer/1.0/setscenemark",
                 "Token": "example-token-kjasdfpoisdjfpoiasdjfoipasjfopiasjdfpo",
+                "NodeToken": "example-nodetoken-lalalalalalala",
                 "NodeInput": {
                     "DataTypeMode": 6,
                     "RegionsOfInterest": [

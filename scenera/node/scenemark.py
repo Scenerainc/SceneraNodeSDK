@@ -9,7 +9,8 @@ import datetime
 import json
 import random
 import requests
-from .spec import Spec, request_json_validator
+import jwt
+from .spec import Spec, request_json_validator, validate_jwt_token
 
 class SceneMark:
     """
@@ -22,21 +23,26 @@ class SceneMark:
     :param node_id: Environment variable assigned to the Node through the Developer Portal.
         The Node ID is the unique identifier of the Node.
     :type node_id: string
+    :param disable_token_verification: Allows you to turn off the token validation.
+    :type disable_token_verification: bool
     """
     # pylint: disable=too-many-public-methods
     def __init__ (
         self,
         request,
         node_id : str,
+        disable_token_verification: bool = False,
         ):
+
+        # Verify that we get an address to return the SceneMark z
+        self.nodesequencer_header = request.json['NodeSequencerHeader']
+        if not disable_token_verification:
+            validate_jwt_token(self.nodesequencer_header['NodeToken'])
+        request_json_validator(self.nodesequencer_header, Spec.NodesequencerHeaderSchema)
 
         # Verify SceneMark input to match the Spec
         self.scenemark = request.json['SceneMark']
         request_json_validator(self.scenemark, Spec.SceneMarkSchema)
-
-        # Verify that we get an address to return the SceneMark z
-        self.nodesequencer_header = request.json['NodeSequencerHeader']
-        request_json_validator(self.nodesequencer_header, Spec.NodesequencerHeaderSchema)
 
         # Set assigned Node parameters
         self.node_id = node_id
@@ -543,7 +549,7 @@ class SceneMark:
         timestamp : str = "",
         duration : str  = "",
         media_format : str = "",
-        encryption : bool = False,
+        encryption : dict = {},
         embedded_scenedata : str = "",
         ):
         """

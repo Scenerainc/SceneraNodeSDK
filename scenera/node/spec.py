@@ -5,9 +5,24 @@ For more information: https://www.nicealliance.org/specs/
 """
 # pylint: disable=too-many-lines
 import jsonschema
+import jwt
 
 __author__ = 'Dirk Meulenbelt'
 __date__ = '14.03.22'
+
+def validate_jwt_token(token):
+    """
+    Used to validate the security token in the NodeSequencerHeader
+
+    :param token: token, in jwt format
+    :type token: string
+    """
+    jwt.decode(
+        token,
+        Spec.NodeSequencerPublicKey,
+        algorithms = ['RS256'],
+        audience = "Scenera-Node"
+        )
 
 def request_json_validator(request, schema):
     """
@@ -158,7 +173,7 @@ class Spec:
     }
 
     # pylint: disable=line-too-long
-    NodeSequencerPublicKey = "MIIBCgKCAQEAwQJ0bZfrWHxmEaYA/sG6FLx64+yxpH4quK36/wVm4+xhlvF4V7bdvvb4jg5teUZkaGdF96EnW/wQhtLZoYU/YSkT9mCXdm5k/gB0LE22peWuNZ3xFDVm4/O0XD/+20X/h9pux2pbBN+X21zwnil97H8u5VLOcvzy+yiivBOSWicol2xS376xwzX/VZjouxqzMfqRofRGa60y+e4vMzeEdAsu+fSADUj3Zh27ua8d1K2fCEqfClHPFBMB/HbLT9AtJFWBTThJqIaHn6cHtx1/6hk5elenmzoOQA4DdoEIxCjdZ0kkOH/W3aa0GCSKdnuUPFSeg9QRVsV9aC1Kn4Xx4wIDAQAB"
+    NodeSequencerPublicKey = "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEAwQJ0bZfrWHxmEaYA/sG6FLx64+yxpH4quK36/wVm4+xhlvF4V7bdvvb4jg5teUZkaGdF96EnW/wQhtLZoYU/YSkT9mCXdm5k/gB0LE22peWuNZ3xFDVm4/O0XD/+20X/h9pux2pbBN+X21zwnil97H8u5VLOcvzy+yiivBOSWicol2xS376xwzX/VZjouxqzMfqRofRGa60y+e4vMzeEdAsu+fSADUj3Zh27ua8d1K2fCEqfClHPFBMB/HbLT9AtJFWBTThJqIaHn6cHtx1/6hk5elenmzoOQA4DdoEIxCjdZ0kkOH/W3aa0GCSKdnuUPFSeg9QRVsV9aC1Kn4Xx4wIDAQAB\n-----END RSA PUBLIC KEY-----"
 
     SceneMarkSchema = {
         "$schema": "http://json-schema.org/draft-06/schema#",

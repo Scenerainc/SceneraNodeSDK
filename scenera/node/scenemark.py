@@ -15,8 +15,8 @@ import requests
 import urllib3
 from .jwt_decode import validate_jwt_token
 from .logger import configure_logger
-from .schemas.nodesequencer_header_schema import nodesequencer_header_schema
-from .schemas.scenemark_schema import scenemark_schema
+from .nodesequencer_header_schema import nodesequencer_header_schema
+from .scenemark_schema import scenemark_schema
 from .spec import (
     EventType,
     NICEItemType,

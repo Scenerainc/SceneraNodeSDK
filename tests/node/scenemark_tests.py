@@ -4,7 +4,14 @@ Unit-tests for the Node AI SDK
 
 import unittest
 import jsonschema
-from scenera.node import SceneMark, ValidationError, spec
+from scenera.node import SceneMark, spec
+from scenera.node.validators import ValidationError
+from scenera.node.utils import (
+    extract_node_datatype_mode,
+    get_latest_scenedata_version_number,
+    get_my_version_number,
+    get_regions_of_interest
+    )
 
 class SceneMarkTestCase(unittest.TestCase):
 
@@ -45,27 +52,27 @@ class SceneMarkTestCase(unittest.TestCase):
     def test_get_my_version_number(self):
         # Set to 4.0 because the initialisation has already
         # updated the VersionControl
-        self.assertEqual(self.sm.get_my_version_number(), 4.0)
+        self.assertEqual(get_my_version_number(self.sm.scenemark), 4.0)
 
         #This can be left at 3.0 because it's the class attribute
         self.assertEqual(self.sm.my_version_number, 3.0)
 
     def test_extract_node_datatype_mode(self):
-        self.assertEqual(self.sm.extract_node_datatype_mode(), 'RGBVideo')
+        self.assertEqual(extract_node_datatype_mode(self.sm.nodesequencer_header), 'RGBVideo')
 
     def test_extra_node_datatype_mode_missing_setting(self):
         self.sm.nodesequencer_header['NodeInput'] = {}
-        self.assertEqual(self.sm.extract_node_datatype_mode(), 'RGBStill')
+        self.assertEqual(extract_node_datatype_mode(self.sm.nodesequencer_header), 'RGBStill')
 
     def test_get_regions_of_interest(self):
         regions_of_interest = [
             [(0.1, 0.2),(0.3, 0.4),(0.5, 0.6)],
             [(0.7, 0.8),(0.9, 0.10),(0.11, 0.12),(0.13,0.14),(0.15,0.16),(0.17,0.18)]
             ]
-        self.assertEqual(regions_of_interest, self.sm.get_regions_of_interest())
+        self.assertEqual(regions_of_interest, get_regions_of_interest(self.sm.nodesequencer_header))
 
     def test_get_latest_scenedata_version_number(self):
-        self.assertEqual(self.sm.get_latest_scenedata_version_number(), 2.0)
+        self.assertEqual(get_latest_scenedata_version_number(self.sm.scenemark), 2.0)
 
     def test_get_scenedata_id_to_uri_dict(self):
         sd_id_uri_dict = self.sm.get_scenedata_id_uri_dict(targets_only=False)
@@ -144,7 +151,7 @@ class SceneMarkTestCase(unittest.TestCase):
             self.sm.get_uri_from_id("wrong ID")
 
     def test_generate_scenedata_id(self):
-        ref = f"SDT_{self.sm.node_id}_0001_{self.sm.generate_random_id(6)}"
+        ref = f"SDT_{self.sm.node_id}_{self.sm.device_id}_{self.sm.generate_random_id(6)}"
         sd_id = self.sm.generate_scenedata_id()
         self.assertEqual(ref[:23], sd_id[:23])
 

@@ -1,1 +1,1 @@
-from scenera.node.scenemark import SceneMark, ValidationError
+from scenera.node.scenemark import SceneMark

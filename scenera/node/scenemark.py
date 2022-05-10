@@ -1,18 +1,49 @@
+# pylint: disable=logging-fstring-interpolation
+# pylint: disable=too-many-arguments
 """
 This file contains the main SceneMark class and its methods for the Scenera Node SDK.
 """
 
 __author__ = 'Dirk Meulenbelt'
-__date__ = '14.03.22'
+__date__ = '10.05.22'
 
 import datetime
 import json
+import logging
 import random
 import requests
-import jwt
-from .spec import Spec, request_json_validator, validate_jwt_token
+import urllib3
+from .jwt_decode import validate_jwt_token
+from .logger import configure_logger
+from .schemas.nodesequencer_header_schema import nodesequencer_header_schema
+from .schemas.scenemark_schema import scenemark_schema
+from .spec import (
+    EventType,
+    NICEItemType,
+    ProcessingStatus,
+    DataType,
+    MediaFormat
+)
+from .utils import (
+    get_my_version_number,
+    extract_node_datatype_mode,
+    get_regions_of_interest,
+    get_latest_scenedata_version_number
+    )
+from .validators import (
+    ValidationError,
+    request_json_validator
+    )
+
+logger = logging.getLogger(__name__)
+logger = configure_logger(logger, debug=True)
+
+# Disable warning for local development
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class SceneMark:
+    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-instance-attributes
     """
     This class loads a SceneMark and contains various methods to update the
     SceneMark in the course of Node Processing. It provides various methods
@@ -26,7 +57,6 @@ class SceneMark:
     :param disable_token_verification: Allows you to turn off the token validation.
     :type disable_token_verification: bool
     """
-    # pylint: disable=too-many-public-methods
     def __init__ (
         self,
         request,
@@ -34,21 +64,37 @@ class SceneMark:
         disable_token_verification: bool = False,
         ):
 
+        # --- Validation
+
         # Verify that we get an address to return the SceneMark z
         self.nodesequencer_header = request.json['NodeSequencerHeader']
         if not disable_token_verification:
             validate_jwt_token(self.nodesequencer_header['NodeToken'])
-        request_json_validator(self.nodesequencer_header, Spec.NodesequencerHeaderSchema)
+        request_json_validator(
+            self.nodesequencer_header,
+            nodesequencer_header_schema,
+            "NodeSequencer Header"
+            )
 
         # Verify SceneMark input to match the Spec
         self.scenemark = request.json['SceneMark']
-        request_json_validator(self.scenemark, Spec.SceneMarkSchema)
+        request_json_validator(
+            self.scenemark,
+            scenemark_schema,
+            "SceneMark"
+            )
 
-        # Set assigned Node parameters
+        logger.info(f"Processing SceneMark: {self.scenemark['SceneMarkID']}")
+
+        # --- Set Node Parameters
         self.node_id = node_id
+        self.device_id = self.scenemark['SceneMarkID'][41:45]
+        print(self.device_id)
+
+        # --- Version Control
 
         # Get the number of the current node in the NodeSequence
-        self.my_version_number = self.get_my_version_number()
+        self.my_version_number = get_my_version_number(self.scenemark)
 
         # Update the version control with the NodeID & TimeStamp
         self.my_timestamp = self.get_current_utc_timestamp()
@@ -56,17 +102,21 @@ class SceneMark:
         # Automatically add a Version Control item to the Node
         self.add_version_control_item()
 
+        # --- Node Objectives
+
         # Get the DataType the Node works on
-        self.node_datatype_mode = self.extract_node_datatype_mode()
+        self.node_datatype_mode = extract_node_datatype_mode(self.nodesequencer_header)
 
         # Get the polygon if there is one.
-        self.regions_of_interest = self.get_regions_of_interest()
+        self.regions_of_interest = get_regions_of_interest(self.nodesequencer_header)
 
         # Find the latest scenedata additions
-        self.latest_sd_version = self.get_latest_scenedata_version_number()
+        self.latest_sd_version = get_latest_scenedata_version_number(self.scenemark)
 
         # Get the targets to work on
         self.targets = self.get_scenedata_uri_list()
+
+        logger.info(f"Working on these items: {self.targets}")
 
     def save_request(self, request_type : str, name : str):
         """
@@ -81,80 +131,17 @@ class SceneMark:
         """
         assert request_type in ("SM", "NSH")
         if request_type == "SM":
+            logger.info(f"Saving SceneMark as '{name}.json'")
             if not name:
                 name = "scenemark"
             with open(f"{name}.json", 'w', encoding="utf-8") as json_file:
                 json.dump(self.scenemark, json_file)
         elif request_type == "NSH":
+            logger.info(f"Saving NodeSequener Header as '{name}.json'")
             if not name:
                 name = "nodesequencer_header"
             with open(f"{name}.json", 'w', encoding="utf-8") as json_file:
                 json.dump(self.nodesequencer_header, json_file)
-
-    def get_my_version_number(self):
-        """
-        Used internally to infer the Node's VersionNumer in the node
-        sequence. Which is a +1 from the last object in the list.
-
-        :return: The Version Number of the Node.
-        :rtype: float
-        :raises ValidationError: VersionControl is missing or malformed
-        """
-        try:
-            return max([vc_item['VersionNumber']  \
-                for vc_item in self.scenemark['VersionControl']['VersionList']]) + 1.0
-        except ValidationError as _e:
-            raise ValidationError("The VersionControl item is missing or malformed") from _e
-
-    def extract_node_datatype_mode(self):
-        """
-        Used internally to extract the DataType the Node should work on.
-
-        :return: DataType, defaults to RGBStill
-        :rtype: string
-        """
-        try:
-            datatype_index = self.nodesequencer_header['NodeInput']['DataTypeMode']
-        # We default to using the RGBStill image in case it is not defined
-        except KeyError:
-            datatype_index = 1
-        return Spec.DataTypeEnumDict[datatype_index]
-
-    def get_regions_of_interest(self):
-        """
-        Extracts the polygon from the node input object in a list of lists as follows:
-
-        :Example:
-
-        [ [ (1, 2), (3, 4), (5, 6) ], [ (7, 8), (9, 10), (11, 12), (13, 14), (15, 16) ] ]
-
-        :return: regions of interest coordinates
-        :rtype: a list of lists, containing tuples
-        """
-        try:
-            regions = []
-            for polygon in self.nodesequencer_header['NodeInput']['RegionsOfInterest']:
-                region = [(coord['X'],coord['Y']) for coord in polygon['Polygon']]
-                if len(region) >= 3:
-                    regions.append(region)
-                else:
-                    print("There is a region with fewer than 3 coordinates. Discarding.")
-            return regions
-        except KeyError:
-            return []
-
-    def get_latest_scenedata_version_number(self):
-        """
-        Get latest SceneData VersionNumber. This is what the Node should run on.
-
-        :return: VersionNumber
-        :rtype: float
-        """
-        try:
-            return max([sd_item['VersionNumber'] for sd_item in self.scenemark['SceneDataList']])
-        except KeyError:
-            print("There is no SceneData attached to this SceneMark.")
-            return 0.0
 
     def get_scenedata_uri_list(self):
         """
@@ -200,9 +187,8 @@ class SceneMark:
                 for scenedata_item in self.scenemark['SceneDataList'] \
                     if (scenedata_item['DataType'] == self.node_datatype_mode) and \
                         (scenedata_item['VersionNumber'] == self.latest_sd_version)}
-        else:
-            return {scenedata_item['SceneDataID']:scenedata_item['SceneDataURI'] \
-                for scenedata_item in self.scenemark['SceneDataList']}
+        return {scenedata_item['SceneDataID']:scenedata_item['SceneDataURI'] \
+            for scenedata_item in self.scenemark['SceneDataList']}
 
     def get_uri_scenedata_id_dict(self, targets_only = True):
         """
@@ -226,9 +212,8 @@ class SceneMark:
                 for scenedata_item in self.scenemark['SceneDataList'] \
                     if (scenedata_item['DataType'] == self.node_datatype_mode) and \
                         (scenedata_item['VersionNumber'] == self.latest_sd_version)}
-        else:
-            return {scenedata_item['SceneDataURI']:scenedata_item['SceneDataID'] \
-                for scenedata_item in self.scenemark['SceneDataList']}
+        return {scenedata_item['SceneDataURI']:scenedata_item['SceneDataID'] \
+            for scenedata_item in self.scenemark['SceneDataList']}
 
     def get_id_from_uri(self, uri : str):
         """
@@ -243,6 +228,7 @@ class SceneMark:
         for scenedata in self.scenemark['SceneDataList']:
             if scenedata['SceneDataURI'] == uri:
                 return scenedata['SceneDataID']
+        logger.warning("No SceneData associated with the SceneMark")
         return "No SceneDataID found!"
 
     def get_uri_from_id(self, scenedata_id : str):
@@ -259,7 +245,9 @@ class SceneMark:
         for scenedata in self.scenemark['SceneDataList']:
             if scenedata['SceneDataID'] == scenedata_id:
                 return scenedata['SceneDataURI']
-        raise ValidationError("No match found")
+        error = "No match found"
+        logger.exception(error)
+        raise ValidationError(error)
 
     def generate_scenedata_id(self):
         """
@@ -272,7 +260,7 @@ class SceneMark:
         :return: SceneDataID (see example)
         :rtype: string
         """
-        return f"SDT_{self.node_id}_0001_{self.generate_random_id(6)}"
+        return f"SDT_{self.node_id}_{self.device_id}_{self.generate_random_id(6)}"
 
     @staticmethod
     def generate_bounding_box(
@@ -310,7 +298,7 @@ class SceneMark:
             and isinstance(y_c, float) \
             and isinstance(height, float) \
             and isinstance(width, float)), \
-            "Arguments need to be integers"
+            logger.exception("Arguments need to be integers")
 
         bounding_box_item = {}
         bounding_box_item['XCoordinate'] = x_c
@@ -357,6 +345,7 @@ class SceneMark:
         attribute_item['Value'] = value
         attribute_item['ProbabilityOfAttribute'] = probability_of_attribute
 
+        logger.info(f"Attribute item of {attribute}:{value} created")
         return attribute_item
 
     @staticmethod
@@ -370,6 +359,7 @@ class SceneMark:
         attributes : list = [],
         bounding_box : dict = None,
         ):
+        # pylint: disable=dangerous-default-value
         """
         Generates a detected object item
 
@@ -420,9 +410,9 @@ class SceneMark:
         :return: dictionary containing a DetectedObject item, see example.
         :rtype: dict
         """
-        # pylint: disable=dangerous-default-value
 
-        assert nice_item_type in Spec.NICEItemType, "This Item Type is not part of the Spec."
+        assert nice_item_type in NICEItemType, \
+            logger.exception("This Item Type is not part of the Spec.")
 
         detected_object = {}
         detected_object['NICEItemType'] = nice_item_type
@@ -434,6 +424,7 @@ class SceneMark:
         detected_object['Attributes'] = attributes
         detected_object['BoundingBox'] = bounding_box
 
+        logger.info(f"DetectedObjects item of NICEItemType '{nice_item_type}' generated")
         return detected_object
 
     def add_analysis_list_item(
@@ -447,6 +438,7 @@ class SceneMark:
         error_message : str = "",
         detected_objects : list = [],
         ):
+        # pylint: disable=dangerous-default-value
         """
         Updates the SceneMark state with the unique analysis list item that is added by an AI Node.
         This could be considered the main event of the Node SDKs. Updates the SceneMark in place.
@@ -470,10 +462,10 @@ class SceneMark:
         :type processing_status: string
         :param event_type: Environment variable assigned to the Node through the Developer Portal.
             The main thing this Node is 'interested in'. Can take the following range of values from
-            the Specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence, Fire,
-            Abandonment, SpeedGate, Xray, Facility
+            the Specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence,
+            Fire, Abandonment, SpeedGate, Xray, Facility
         :type event_type: string
-        :param custom_event_type: Set when the EventType is set to 'Custom', defaults to "". Optional
+        :param custom_event_type: Set when EventType is set to 'Custom', defaults to "". Optional
         :type custom_event_type: string
         :param analysis_description: string, default "", env variable assigned to the Node
             through the Developer Portal. Used to describe what the analysis is about,
@@ -493,15 +485,14 @@ class SceneMark:
         :raises AssertionError: When the ProcessingStatus is not recognized as part of the Spec.
         :raises AssertionError: When the EventType is not recognized as part of the Spec.
         """
-        # pylint: disable=dangerous-default-value
 
-        assert event_type in Spec.EventType, "EventType given not in Spec"
+        assert event_type in EventType, logger.exception("EventType given not in Spec")
 
         analysis_list_item = {}
         analysis_list_item['VersionNumber'] = self.my_version_number
 
-        assert processing_status in Spec.ProcessingStatus, \
-            "This Processing Status is not part of the Spec."
+        assert processing_status in ProcessingStatus, \
+            logger.exception("This Processing Status is not part of the Spec.")
         analysis_list_item['ProcessingStatus'] = processing_status
 
         analysis_list_item['EventType'] = event_type
@@ -513,6 +504,7 @@ class SceneMark:
         analysis_list_item['DetectedObjects'] = detected_objects
 
         self.scenemark['AnalysisList'].append(analysis_list_item)
+        logger.info(f"AnalysisList item of EventType '{event_type}' added")
 
     def add_thumbnail_list_item(self, scenedata_id : str):
         """
@@ -540,6 +532,7 @@ class SceneMark:
         thumbnail_list_item['SceneDataID'] = scenedata_id
 
         self.scenemark['ThumbnailList'].append(thumbnail_list_item)
+        logger.info(f"Thumbnail set to: {scenedata_id}")
 
     def add_scenedata_item(
         self,
@@ -552,6 +545,7 @@ class SceneMark:
         encryption : dict = {},
         embedded_scenedata : str = "",
         ):
+        # pylint: disable=dangerous-default-value
         """
         Adds a SceneData item to the SceneMark in place.
 
@@ -605,13 +599,13 @@ class SceneMark:
 
         # We update the new item with the URI that you have to provide
         assert scenedata_uri, \
-            "No SceneData URI is present."
+            logger.exception("No SceneData URI is present.")
         scenedata_list_item['SceneDataURI'] = scenedata_uri
         scenedata_list_item['Status'] = "Available at Provided URI"
 
         # Update the DataType
-        assert datatype in Spec.DataType, \
-            "This DataType is not part of the Spec."
+        assert datatype in DataType, \
+            logger.exception("This DataType is not part of the Spec.")
         scenedata_list_item['DataType'] = datatype
 
         # If the DataType is a thumbnail, we update the ThumbnailList
@@ -621,8 +615,8 @@ class SceneMark:
         # You are allowed to set your own timestamp but will otherwise take the default
         scenedata_list_item['TimeStamp'] = timestamp if timestamp else self.my_timestamp
 
-        assert media_format in Spec.MediaFormat, \
-            "This Media Format is not part of the Spec."
+        assert media_format in MediaFormat, \
+            logger.exception("This Media Format is not part of the Spec.")
         scenedata_list_item['MediaFormat'] = media_format if media_format else 'UNSPECIFIED'
 
         # This equals the Node ID that is assigned to your node
@@ -635,6 +629,7 @@ class SceneMark:
         scenedata_list_item['EmbeddedSceneData'] = embedded_scenedata
 
         self.scenemark['SceneDataList'].append(scenedata_list_item)
+        logger.info(f"SceneData item '{scenedata_list_item['SceneDataID']}' added")
 
     def update_scenedata_item(self, scenedata_id, key, value):
         """
@@ -652,8 +647,11 @@ class SceneMark:
                         break
 
             sd_item_for_change[key] = value
+            logger.info(f"SceneData item '{scenedata_id}' updated")
         except KeyError as _e:
-            raise KeyError("Can't update the SceneData item") from _e
+            error = "Can't update the SceneData item"
+            logger.exception(error)
+            raise KeyError(error) from _e
 
     def add_version_control_item(self):
         """
@@ -682,10 +680,12 @@ class SceneMark:
         :param message: Text for the body of the push notification, capped at 200 characters
         :type message: string
         """
-        assert len(str(message)) <= 200
+        assert len(str(message)) <= 200, logger.exception("Custom message exceeds 200 chars")
         self.scenemark['NotificationMessage'] = str(message)
+        logger.info("Custom push notififation message added")
 
     def return_scenemark_to_ns(self, test = False):
+        # pylint: disable=inconsistent-return-statements
         """
         Returns the SceneMark to the NodeSequencer with an HTTP call using the received address
 
@@ -694,13 +694,13 @@ class SceneMark:
             some other app, defaults to False
         :type test: bool
         """
-        # pylint: disable=inconsistent-return-statements
 
         # Update our original request with the updated SceneMark
-        request_json_validator(self.scenemark, Spec.SceneMarkSchema)
+        request_json_validator(self.scenemark, scenemark_schema, "SceneMark schema")
 
         scenemark = json.dumps(self.scenemark)
         if test:
+            logger.info("Sending the SceneMark back directly")
             return scenemark
 
         # We add the token to the HTTP header.
@@ -719,7 +719,7 @@ class SceneMark:
             headers=ns_header,
             verify=verify,
             stream=False)
-        print("Returning to Node Sequencer", answer)
+        logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
 
     # Helper Functions
     @staticmethod
@@ -744,11 +744,3 @@ class SceneMark:
         """
         return ''.join([random.choice('0123456789abcdefghijklmnopqrstuvwxyz') \
             for _ in range(length)])
-
-class ValidationError(Exception):
-    """
-    Self-defined error to raise when the values do not match.
-    """
-    def __init__(self, msg):
-        _ = super().__init__()
-        self.msg = msg

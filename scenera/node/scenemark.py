@@ -647,7 +647,7 @@ class SceneMark:
                         break
 
             sd_item_for_change[key] = value
-            logger.info(f"SceneData item '{scenedata_id}' updated")
+            logger.info(f"SceneData item '{scenedata_id}' updated: '{key}' set to '{value}'")
         except KeyError as _e:
             error = "Can't update the SceneData item"
             logger.exception(error)

@@ -73,7 +73,7 @@ def get_regions_of_interest(nodesequencer_header):
                     "There is a Region of Interest with fewer than 3 coordinates. Discarding.")
         logger.info(f"Region(s) of Interest: {regions}")
         return regions
-    except KeyError:
+    except TypeError:
         logger.info("Region of Interest missing. Setting to an empty list.")
         return []
 
@@ -88,6 +88,6 @@ def get_latest_scenedata_version_number(scenemark):
     """
     try:
         return max([sd_item['VersionNumber'] for sd_item in scenemark['SceneDataList']])
-    except KeyError:
+    except ValueError:
         logger.exception("There is no SceneData attached to this SceneMark.")
         return 0.0

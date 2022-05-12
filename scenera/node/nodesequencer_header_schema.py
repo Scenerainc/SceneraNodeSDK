@@ -34,18 +34,15 @@ nodesequencer_header_schema = {
             "additionalProperties": False,
             "properties": {
                 "DataTypeMode": {
-                    "type": "integer"
+                    "type": ["integer", "null"]
                 },
                 "RegionsOfInterest": {
-                    "type": "array",
+                    "type": ["array", "null"],
                     "items": {
                         "$ref": "#/definitions/RegionsOfInterest"
                     }
                 }
             },
-            "required": [
-                "DataTypeMode",
-            ],
             "title": "NodeInput"
         },
         "RegionsOfInterest": {

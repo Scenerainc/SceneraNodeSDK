@@ -13,7 +13,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
 setup(
     name="scenera.node",
-    version="0.2.6",
+    version="0.2.7",
     description="Scenera Node SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -37,6 +37,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "PyJWT",
+        "cryptography",
         "jsonschema",
         "requests",
         "urllib3"]

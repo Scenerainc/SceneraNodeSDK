@@ -13,7 +13,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
 setup(
     name="scenera.node",
-    version="0.2.7",
+    version="0.2.8",
     description="Scenera Node SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",

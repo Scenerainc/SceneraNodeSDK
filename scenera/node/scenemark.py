@@ -89,7 +89,6 @@ class SceneMark:
         # --- Set Node Parameters
         self.node_id = node_id
         self.device_id = self.scenemark['SceneMarkID'][41:45]
-        print(self.device_id)
 
         # --- Version Control
 

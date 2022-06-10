@@ -73,8 +73,8 @@ def get_regions_of_interest(nodesequencer_header):
                     "There is a Region of Interest with fewer than 3 coordinates. Discarding.")
         logger.info(f"Region(s) of Interest: {regions}")
         return regions
-    except TypeError:
-        logger.info("Region of Interest missing. Setting to an empty list.")
+    except Exception as _e:
+        logger.info(f"Region of Interest missing. Setting to an empty list. ({_e})")
         return []
 
 def get_latest_scenedata_version_number(scenemark):

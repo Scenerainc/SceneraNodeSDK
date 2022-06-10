@@ -42,8 +42,8 @@ def extract_node_datatype_mode(nodesequencer_header):
     try:
         datatype_index = nodesequencer_header['NodeInput']['DataTypeMode']
     # We default to using the RGBStill image in case it is not defined
-    except TypeError:
-        logger.warning("NodeInput DataTypeMode missing, setting default to RGBStill")
+    except Exception as _e:
+        logger.warning(f"NodeInput and/or DataTypeMode missing, setting default to RGBStill. ({_e})")
         datatype_index = 1
     datatype_mode = DataTypeEnumDict[datatype_index]
     logger.info(f"DataTypeMode: {datatype_mode}")

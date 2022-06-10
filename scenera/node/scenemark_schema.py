@@ -124,7 +124,8 @@ scenemark_schema = {
                             "SpeedGate",
                             "Xray",
                             "Facility",
-                            "Scheduled"
+                            "Scheduled",
+                            "Test"
                         ]
                     },
                     "CustomEventType": {
@@ -191,7 +192,8 @@ scenemark_schema = {
                                         "Bag",
                                         "Accessory",
                                         "Weapon",
-                                        "Undefined"
+                                        "Undefined",
+                                        "Test"
                                     ]
                                 },
                                 "CustomItemType": {

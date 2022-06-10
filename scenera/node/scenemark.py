@@ -683,7 +683,7 @@ class SceneMark:
         self.scenemark['NotificationMessage'] = str(message)
         logger.info("Custom push notififation message added")
 
-    def return_scenemark_to_ns(self, test = False):
+    def return_scenemark_to_ns(self, test = False, load_test = False):
         # pylint: disable=inconsistent-return-statements
         """
         Returns the SceneMark to the NodeSequencer with an HTTP call using the received address
@@ -702,14 +702,16 @@ class SceneMark:
             logger.info("Sending the SceneMark back directly")
             return scenemark
 
+        if load_test:
+            logger.info("Load Test: Doing nothing with the resulting SceneMark")
+            return {}, 200
+
         # We add the token to the HTTP header.
         ns_header = {'Authorization': 'Bearer ' + self.nodesequencer_header['Token'],
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'}
 
-        verify = False
-        if self.nodesequencer_header['Ingress'].startswith("https"):
-            verify = True
+        verify = True if self.nodesequencer_header['Ingress'].startswith("https") else False
 
         # Call NodeSequencer with an updated SceneMark
         answer = requests.post(

@@ -20,6 +20,7 @@ EventType = frozenset([
     "Xray",
     "Facility",
     "Scheduled",
+    "Test",
     ])
 
 NICEItemType = frozenset([
@@ -37,7 +38,9 @@ NICEItemType = frozenset([
     "Bag",
     "Furniture",
     "Weapon",
-    "Undefined"])
+    "Undefined",
+    "Test",
+    ])
 
 ProcessingStatus = frozenset([
     "CustomAnalysis",
@@ -47,7 +50,8 @@ ProcessingStatus = frozenset([
     "Characterized",
     "Undetected",
     "Failed",
-    "Error"])
+    "Error",
+    ])
 
 DataType = frozenset([
     "Thumbnail",
@@ -73,7 +77,8 @@ DataType = frozenset([
     "LiquidLevel",
     "Acceleration",
     "Rotation",
-    "Other"])
+    "Other",
+    ])
 
 MediaFormat = frozenset([
     "UNSPECIFIED",
@@ -82,12 +87,14 @@ MediaFormat = frozenset([
     "H264",
     "H265",
     "RAW",
-    "JSON"])
+    "JSON",
+    ])
 
 AudioMediaFormat = frozenset([
     "AAC",
     "MP3",
-    "WAV"])
+    "WAV",
+    ])
 
 Status = frozenset([
     "Available at Provided URI",
@@ -117,5 +124,5 @@ DataTypeEnumDict = {
     20: 'LiquidLevel',
     21: 'Acceleration',
     22: 'Rotatioan',
-    23: 'Other'
+    23: 'Other',
 }

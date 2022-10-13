@@ -248,6 +248,53 @@ class SceneMark:
         logger.exception(error)
         raise ValidationError(error)
 
+    def get_detected_objects_from_sd_id(self, scenedata_id):
+        """
+        Creates a list of DetectedObjects that have thge pased
+        SceneDataID listed as RelatedSceneData.
+
+        [\n
+            {\n
+                {\n
+                  "NICEItemType": "Human",\n
+                  "CustomItemType": "",\n
+                  "ItemID": "",\n
+                  "ItemTypeCount": 1,\n
+                  "Probability": 0.95,\n
+                  "Attributes": [\n
+                  ],\n
+                  "BoundingBox": {\n
+                      "XCoordinate": 0.0244,\n
+                      "YCoordinate": 0.4522,\n
+                      "Height": 0.873,\n
+                      "Width": 0.566,\n
+                  },\n
+                  "RelatedSceneData": "SDT_3c84184e-7a50-449e-af06-dcdf415bebce_c88e_360302"\n
+              }\n
+            }\n
+        ]
+
+        :return: list of DetectedObjects
+        :rtype: list
+        """
+        det_objects = []
+        for analysis_list_item in self.scenemark['AnalysisList']:
+            for det_object_item in analysis_list_item['DetectedObjects']:
+                if det_object_item['RelatedSceneData'] == scenedata_id:
+                    det_objects.append(det_object_item)
+        return det_objects
+
+    def get_detected_objects_from_sd_uri(self, scenedata_uri):
+        """
+        Creates a list of DetectedObjects that have the pased
+        SceneDataURI's associated ID listed as RelatedSceneData.
+
+        :return: list of DetectedObjects
+        :rtype: list
+        """
+        id = self.get_id_from_uri(scenedata_uri)
+        return self.get_detected_objects_from_sd_id(id)
+
     def generate_scenedata_id(self):
         """
         Generates a SceneDataID using the Node ID

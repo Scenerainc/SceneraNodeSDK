@@ -697,43 +697,165 @@ scenemark_schema = {
             }
         },
         "SceneModeConfig": {
-            "type": [
-                "array",
-                "null"
-            ],
+            "type": "array",
+            "description": "This defines the depth of analysis performed and whether a resut of an output can be used to drive a subsequent capture of frames.",
+            "uniqueItems": True,
             "items": {
                 "type": "object",
-                "additionalProperties": {
-                    "not": {}
-                },
+                "description": "If this value is set to 20s the node should not generaate another SceneMark for 20s after the first SceneMark was generated.",
                 "properties": {
+                    "Analysis": {
+                        "type": "string",
+                        "enum": [
+                            "Motion",
+                            "Snapshot",
+                            "Scheduled",
+                            "Continuous",
+                            "Label",
+                            "ItemPresence",
+                            "Loitering",
+                            "Intrusion",
+                            "Falldown",
+                            "Violence",
+                            "Fire",
+                            "Abandonment",
+                            "SpeedGate",
+                            "Xray",
+                            "Facility",
+                            "Custom"
+                        ]
+                    },
+                    "AnalysisStage": {
+                        "type": "string",
+                        "enum": [
+                            "Motion",
+                            "Detect",
+                            "Recognize",
+                            "Characterize"
+                        ]
+                    },
+                    "CustomAnalysisID": {
+                        "type": "string",
+                        "description": "Each algorithm and set of weights has a unique ID that is defined by NICE. This value shall be carried in this record."
+                    },
+                    "AnalysisDescription": {
+                        "type": "string",
+                        "description": "Description of algorithm."
+                    },
                     "CustomAnalysisStage": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "This defines analysis stages that are proprietary."
+                    },
+                    "LabelRefDataList": {
+                        "type": "array",
+                        "description": "For a specific label the following are reference data such as images for the particular label. The Node shall process these images to create the appropriate reference vector and store which RefDataIDs have been used to create the vector. If new RefDataIDs are detected in the SceneMode object the vector shall be regenerated with the listed RefData.",
+                        "uniqueItems": True,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "LabelName": {
+                                    "type": "string",
+                                    "description": "Label name for example for facial recognition this would be the name or id of an individual."
+                                },
+                                "RefDataList": {
+                                    "type": "array",
+                                    "uniqueItems": True,
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "RefDataID": {
+                                                "type": "string"
+                                            },
+                                            "RefDataEndPoint": {
+                                                "$ref": "#/definitions/EndPoint"
+                                            }
+                                        },
+                                        "required": [
+                                            "RefDataID"
+                                        ]
+                                    }
+                                },
+                                "RefData": {
+                                    "type": "array",
+                                    "uniqueItems": True,
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "RefDataID": {
+                                                "type": "string"
+                                            },
+                                            "RefData": {
+                                                "type": "string",
+                                                "description": "Reference data encoded in Base64. For example an image of a persons face."
+                                            },
+                                            "Encryption": {
+                                                "$ref": "#/definitions/Encryption"
+                                            }
+                                        },
+                                        "required": [
+                                            "RefDataID",
+                                            "RefData",
+                                            "Encryption"
+                                        ]
+                                    }
+                                },
+                                "ProcessingStage": {
+                                    "type": "string",
+                                    "description": "This indicates which analysis stage should use the reference data.",
+                                    "enum": [
+                                        "CustomAnalysis",
+                                        "Motion",
+                                        "Detect",
+                                        "Recognize",
+                                        "Characterize"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "ProcessingStage",
+                                "LabelName"
+                            ]
+                        }
+                    },
+                    "AnalysisThreshold": {
+                        "type": "number",
+                        "description": "The output of the analysis should be greater than this value to trigger the Capture Sequence."
+                    },
+                    "AnalysisSampleRate": {
+                        "type": "number"
                     },
                     "AnalysisRegion": {
                         "type": "object",
                         "properties": {
+                            "ROIType": {
+                                "type": "string",
+                                "enum": [
+                                    "MultiPolygon",
+                                    "MultiLine",
+                                    "SingleLine",
+                                    "SinglePolygon"
+                                ]
+                            },
                             "ROICoords": {
                                 "type": "array",
                                 "items": {
                                     "type": "object",
                                     "properties": {
+                                        "Severity": {
+                                            "type": "string"
+                                        },
                                         "Coords": {
                                             "type": "array",
                                             "items": {
                                                 "type": "object",
                                                 "properties": {
                                                     "XCoord": {
-                                                        "type": "integer"
+                                                        "type": "number"
                                                     },
                                                     "YCoord": {
-                                                        "type": "integer"
+                                                        "type": "number"
                                                     }
-                                                },
-                                                "required": [
-                                                    "XCoord",
-                                                    "YCoord"
-                                                ]
+                                                }
                                             }
                                         }
                                     }
@@ -741,22 +863,45 @@ scenemark_schema = {
                             }
                         }
                     },
-                    "Resolution": {
-                        "type": "string"
-                    },
-                    "Threshold": {
-                        "type": "number"
+                    "IgnoreObjectDetection": {
+                        "type": "object",
+                        "properties": {
+                            "ObjectLargerThan": {
+                                "type": "number",
+                                "description": "If object is larger than this fraction of screen Area, ignore inferencing or Motion Detection"
+                            },
+                            "ObjectSmallerThan": {
+                                "type": "number",
+                                "description": "if smaller than this value (fraction of screen), ignore inferencing or Motion Detection"
+                            }
+                        }
                     },
                     "Scheduling": {
                         "type": "array",
                         "items": {
                             "type": "object",
-                            "additionalProperties": {
-                                "not": {}
-                            },
                             "properties": {
                                 "SchedulingType": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "enum": [
+                                        "Default",
+                                        "ScheduledOnce",
+                                        "ScheduledHourly",
+                                        "ScheduledDaily",
+                                        "ScheduledWeekDay",
+                                        "ScheduledWeekEnd",
+                                        "ScheduledWeekly",
+                                        "ScheduledMonthly",
+                                        "ScheduledAnnually",
+                                        "Sunday",
+                                        "Monday",
+                                        "Tuesday",
+                                        "Wednesday",
+                                        "Thursday",
+                                        "Friday",
+                                        "Saturday",
+                                        "Holiday"
+                                    ]
                                 },
                                 "StartTime": {
                                     "type": "string"
@@ -764,22 +909,129 @@ scenemark_schema = {
                                 "EndTime": {
                                     "type": "string"
                                 }
+                            }
+                        }
+                    },
+                    "Encryption": {
+                        "$ref": "#/definitions/Encryption"
+                    },
+                    "Filters": {
+                        "type": "object",
+                        "description": "These items are used to either explicitly trigger a SceneMark or should be ignored when they are triggered.",
+                        "properties": {
+                            "IgnoreTheseDetectedItems": {
+                                "type": "array",
+                                "description": "If the algorithm detects any items in this list, these should items should be ignored.",
+                                "items": {
+                                    "type": "string"
+                                }
                             },
-                            "required": [
-                                "SchedulingType",
-                                "StartTime",
-                                "EndTime"
+                            "TriggerOnTheseDetectedItems": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "description": "The SceneMarks should only be triggered if one of the items in the list are detected."
+                                }
+                            }
+                        }
+                    },
+                    "MinimumSceneData": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "DataType": {
+                                    "type": "string",
+                                    "enum": [
+                                        "RGBStill",
+                                        "RGBVideo"
+                                    ]
+                                },
+                                "Count": {
+                                    "type": "integer"
+                                },
+                                "Required": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "AnalysisParams": {
+                        "type": "array",
+                        "items": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "ParamName": {
+                                        "type": "string"
+                                    },
+                                    "ParamValue": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "SceneMarkWindow": {
+                        "type": "number",
+                        "description": "The period of time during which after a first SceneMark is generate a second SceneMark is not generated. For example if set to 10 no new SceneMark should be sent for 10 seconds."
+                    },
+                    "SceneMarkFrequency": {
+                        "type": "number",
+                        "description": "If \"Analysis\" is \"Continuous\" this is the period for generating each new SceneMark."
+                    },
+                    "AIServer": {
+                        "type": "object",
+                        "properties": {
+                            "Protocol": {
+                                "type": "string"
+                            },
+                            "Authority": {
+                                "type": "string"
+                            },
+                            "ID": {
+                                "type": "string"
+                            },
+                            "Pass": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "Blur": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "Face",
+                                "Text"
                             ]
+                        }
+                    },
+                    "DrawBoundingBoxes": {
+                        "type": "object",
+                        "description": "If true draw bounding box on detected items.",
+                        "properties": {
+                            "Draw": {
+                                "type": "boolean"
+                            },
+                            "ExecuteOnPipeline": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "Resolution": {
+                        "type": "object",
+                        "properties": {
+                            "Height": {
+                                "type": "integer"
+                            },
+                            "Width": {
+                                "type": "integer"
+                            }
                         }
                     }
                 },
-                "required": [
-                    "CustomAnalysisStage",
-                    "AnalysisRegion",
-                    "Resolution",
-                    "Threshold",
-                    "Scheduling"
-                ]
+                "required": []
             }
         }
     },

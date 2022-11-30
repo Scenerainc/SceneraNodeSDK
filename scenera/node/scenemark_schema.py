@@ -697,7 +697,7 @@ scenemark_schema = {
             }
         },
         "SceneModeConfig": {
-            "type": "array",
+            "type": ["array", "null"],
             "description": "This defines the depth of analysis performed and whether a resut of an output can be used to drive a subsequent capture of frames.",
             "uniqueItems": True,
             "items": {
@@ -735,15 +735,15 @@ scenemark_schema = {
                         ]
                     },
                     "CustomAnalysisID": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "Each algorithm and set of weights has a unique ID that is defined by NICE. This value shall be carried in this record."
                     },
                     "AnalysisDescription": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "Description of algorithm."
                     },
                     "CustomAnalysisStage": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "This defines analysis stages that are proprietary."
                     },
                     "LabelRefDataList": {
@@ -998,7 +998,7 @@ scenemark_schema = {
                         }
                     },
                     "Blur": {
-                        "type": "array",
+                        "type": ["array", "null"],
                         "items": {
                             "type": "string",
                             "enum": [
@@ -1008,7 +1008,7 @@ scenemark_schema = {
                         }
                     },
                     "DrawBoundingBoxes": {
-                        "type": "object",
+                        "type": ["object", "null"],
                         "description": "If true draw bounding box on detected items.",
                         "properties": {
                             "Draw": {
@@ -1020,7 +1020,7 @@ scenemark_schema = {
                         }
                     },
                     "Resolution": {
-                        "type": "object",
+                        "type": ["object", "null"],
                         "properties": {
                             "Height": {
                                 "type": "integer"

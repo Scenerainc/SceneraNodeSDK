@@ -747,7 +747,7 @@ scenemark_schema = {
                         "description": "This defines analysis stages that are proprietary."
                     },
                     "LabelRefDataList": {
-                        "type": "array",
+                        "type": ["array", "null"],
                         "description": "For a specific label the following are reference data such as images for the particular label. The Node shall process these images to create the appropriate reference vector and store which RefDataIDs have been used to create the vector. If new RefDataIDs are detected in the SceneMode object the vector shall be regenerated with the listed RefData.",
                         "uniqueItems": True,
                         "items": {
@@ -758,7 +758,7 @@ scenemark_schema = {
                                     "description": "Label name for example for facial recognition this would be the name or id of an individual."
                                 },
                                 "RefDataList": {
-                                    "type": "array",
+                                    "type": ["array", "null"],
                                     "uniqueItems": True,
                                     "items": {
                                         "type": "object",
@@ -776,7 +776,7 @@ scenemark_schema = {
                                     }
                                 },
                                 "RefData": {
-                                    "type": "array",
+                                    "type": ["array", "null"],
                                     "uniqueItems": True,
                                     "items": {
                                         "type": "object",
@@ -818,14 +818,14 @@ scenemark_schema = {
                         }
                     },
                     "AnalysisThreshold": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "description": "The output of the analysis should be greater than this value to trigger the Capture Sequence."
                     },
                     "AnalysisSampleRate": {
-                        "type": "number"
+                        "type": ["number", "null"],
                     },
                     "AnalysisRegion": {
-                        "type": "object",
+                        "type": ["object", "null"],
                         "properties": {
                             "ROIType": {
                                 "type": "string",
@@ -864,20 +864,20 @@ scenemark_schema = {
                         }
                     },
                     "IgnoreObjectDetection": {
-                        "type": "object",
+                        "type": ["object", "null"],
                         "properties": {
                             "ObjectLargerThan": {
-                                "type": "number",
+                                "type": ["number", "null"],
                                 "description": "If object is larger than this fraction of screen Area, ignore inferencing or Motion Detection"
                             },
                             "ObjectSmallerThan": {
-                                "type": "number",
+                                "type": ["number", "null"],
                                 "description": "if smaller than this value (fraction of screen), ignore inferencing or Motion Detection"
                             }
                         }
                     },
                     "Scheduling": {
-                        "type": "array",
+                        "type": ["array","null"],
                         "items": {
                             "type": "object",
                             "properties": {
@@ -916,27 +916,27 @@ scenemark_schema = {
                         "$ref": "#/definitions/Encryption"
                     },
                     "Filters": {
-                        "type": "object",
+                        "type": ["object", "null"],
                         "description": "These items are used to either explicitly trigger a SceneMark or should be ignored when they are triggered.",
                         "properties": {
                             "IgnoreTheseDetectedItems": {
-                                "type": "array",
+                                "type": ["array", "null"],
                                 "description": "If the algorithm detects any items in this list, these should items should be ignored.",
                                 "items": {
-                                    "type": "string"
+                                    "type": ["string", "null"],
                                 }
                             },
                             "TriggerOnTheseDetectedItems": {
-                                "type": "array",
+                                "type": ["array", "null"],
                                 "items": {
-                                    "type": "string",
+                                    "type": ["string", "null"],
                                     "description": "The SceneMarks should only be triggered if one of the items in the list are detected."
                                 }
                             }
                         }
                     },
                     "MinimumSceneData": {
-                        "type": "array",
+                        "type": ["array", "null"],
                         "items": {
                             "type": "object",
                             "properties": {
@@ -957,7 +957,7 @@ scenemark_schema = {
                         }
                     },
                     "AnalysisParams": {
-                        "type": "array",
+                        "type": ["array", "null"],
                         "items": [
                             {
                                 "type": "object",
@@ -973,15 +973,15 @@ scenemark_schema = {
                         ]
                     },
                     "SceneMarkWindow": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "description": "The period of time during which after a first SceneMark is generate a second SceneMark is not generated. For example if set to 10 no new SceneMark should be sent for 10 seconds."
                     },
                     "SceneMarkFrequency": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "description": "If \"Analysis\" is \"Continuous\" this is the period for generating each new SceneMark."
                     },
                     "AIServer": {
-                        "type": "object",
+                        "type": ["object", "null"],
                         "properties": {
                             "Protocol": {
                                 "type": "string"

@@ -35,6 +35,20 @@ scenemark_schema = {
                             "type": "string",
                             "description": "Unique Key Identifier that enables the key used to encrypt the data. If EncryptionOn is False this value will be ignored."
                         },
+                        "SceneMarkEncryption": {
+                            "type": "object",
+                            "properties": {
+                                "JWEAlg": {
+                                    "type": "string",
+                                },
+                                "JWEEnc": {
+                                    "type": "string",
+                                }
+                            }
+                        },
+                        "SceneDataEncryption": {
+                            "type": "string"
+                        },
                         "PrivacyServerEndPoint": {
                             "type": "object",
                             "properties": {

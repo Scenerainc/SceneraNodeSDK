@@ -1,5 +1,258 @@
 scenemark_schema = {
     "$schema": "http://json-schema.org/draft-06/schema#",
+    "definitions": {
+        "Encryption": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "required": [],
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "EncryptionOn": {
+                            "type": "boolean",
+                            "enum": [
+                                False
+                            ]
+                        }
+                    },
+                    "required": [
+                        "EncryptionOn"
+                    ]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "EncryptionOn": {
+                            "type": "boolean",
+                            "enum": [
+                                True
+                            ]
+                        },
+                        "SceneEncryptionKeyID": {
+                            "type": "string",
+                            "description": "Unique Key Identifier that enables the key used to encrypt the data. If EncryptionOn is False this value will be ignored."
+                        },
+                        "PrivacyServerEndPoint": {
+                            "type": "object",
+                            "properties": {
+                                "AppEndPoint": {
+                                    "ApplicationEndPointSpecifier": {
+                                        "type": "object",
+                                        "properties": {
+                                            "APIVersion": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "1.0"
+                                                ]
+                                            },
+                                            "EndPointID": {
+                                                "type": "string",
+                                                "description": "The NICE Identifier for the Application that is ultimatley the end point for messages."
+                                            },
+                                            "X.509Certificate": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "AccessToken": {
+                                                "type": "string",
+                                                "description": "This token is used by the receiving NICE entity. It shall always comply ot the JWT (RFC 7519) format"
+                                            }
+                                        },
+                                        "required": [
+                                            "APIVersion",
+                                            "EndPointID"
+                                        ]
+                                    }
+                                },
+                                "NetEndPoint": {
+                                    "NetworkEndPointSpecifier": {
+                                        "type": "object",
+                                        "properties": {
+                                            "APIVersion": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "1.0"
+                                                ]
+                                            },
+                                            "EndPointID": {
+                                                "type": "string"
+                                            },
+                                            "NodeID": {
+                                                "type": "string"
+                                            },
+                                            "PortID": {
+                                                "type": "string"
+                                            },
+                                            "Scheme": {
+                                                "type": "array",
+                                                "uniqueItems": True,
+                                                "items": {
+                                                    "anyOf": [
+                                                        {
+                                                            "MQTTScheme": {
+                                                                "type": "object",
+                                                                "title": "Network end point specifier for MQTT",
+                                                                "properties": {
+                                                                    "Protocol": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "MQTT"
+                                                                        ]
+                                                                    },
+                                                                    "Authority": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "Username": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "Password": {
+                                                                        "type": "string",
+                                                                        "description": "Network AccessToken."
+                                                                    },
+                                                                    "ClientID": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "QoS": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            0,
+                                                                            1,
+                                                                            2
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "Protocol",
+                                                                    "Authority",
+                                                                    "Username",
+                                                                    "Password",
+                                                                    "ClientID"
+                                                                ]
+                                                            }
+                                                        },
+                                                        {
+                                                            "WebAPIScheme": {
+                                                                "type": "object",
+                                                                "title": "Network end point specifier for WebAPI",
+                                                                "properties": {
+                                                                    "Protocol": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "WebAPI"
+                                                                        ]
+                                                                    },
+                                                                    "Authority": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "AccessToken": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "Role": {
+                                                                        "type": "string",
+                                                                        "description": "If set to Client, the port shall initiate GET or SET data requests. If Server then the port shall act as a server. ",
+                                                                        "enum": [
+                                                                            "Client",
+                                                                            "Server"
+                                                                        ]
+                                                                    },
+                                                                    "ValidationKey": {
+                                                                        "$ref": "#/definitions/PublicKey"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "Protocol",
+                                                                    "Authority"
+                                                                ]
+                                                            }
+                                                        },
+                                                        {
+                                                            "WebRTCScheme": {
+                                                                "type": "object",
+                                                                "title": "Network end point specifier for WebRTC",
+                                                                "properties": {
+                                                                    "Protocol": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "WebRTC"
+                                                                        ]
+                                                                    },
+                                                                    "IceServers": {
+                                                                        "type": "array",
+                                                                        "uniqueItems": True,
+                                                                        "items": {
+                                                                            "type": "object",
+                                                                            "properties": {
+                                                                                "urls": {
+                                                                                    "type": "array",
+                                                                                    "uniqueItems": True,
+                                                                                    "items": {
+                                                                                        "type": "string",
+                                                                                        "description": "STUN/TURN server URL. e.g. turn:turnserver.example.org"
+                                                                                    }
+                                                                                },
+                                                                                "username": {
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "credential": {
+                                                                                    "type": "string"
+                                                                                }
+                                                                            },
+                                                                            "required": [
+                                                                                "urls"
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "Protocol"
+                                                                ]
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "title": "Network end point specifier for local connection",
+                                                            "properties": {
+                                                                "Protocol": {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "Local"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "Protocol"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "required": [
+                                            "APIVersion",
+                                            "EndPointID",
+                                            "Scheme"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "NetEndPoint"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "EncryptionOn",
+                        "SceneEncryptionKeyID"
+                    ]
+                }
+            ]
+        }
+    },
     "type": "object",
     "title": "SceneMark",
     "description": "The SceneMark contains data describing what has been captured in SceneData and either contains references to SceneData or contains the SceneData itself.",
@@ -409,6 +662,9 @@ scenemark_schema = {
                             "JSON"
                         ]
                     },
+                    "Encryption": {
+                        "$ref": "#/definitions/Encryption"
+                    },
                     "Resolution": {
                         "type": [
                             "object",
@@ -437,256 +693,6 @@ scenemark_schema = {
                             "null"
                         ],
                         "description": "Data may be directly embedded in the SceneMark. The Data is encoded as Base64."
-                    },
-                    "Encryption": {
-                        "Encryption": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
-                            "required": [],
-                            "oneOf": [
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "EncryptionOn": {
-                                            "type": "boolean",
-                                            "enum": [
-                                                False
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "EncryptionOn"
-                                    ]
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "EncryptionOn": {
-                                            "type": "boolean",
-                                            "enum": [
-                                                True
-                                            ]
-                                        },
-                                        "SceneEncryptionKeyID": {
-                                            "type": "string",
-                                            "description": "Unique Key Identifier that enables the key used to encrypt the data. If EncryptionOn is False this value will be ignored."
-                                        },
-                                        "PrivacyServerEndPoint": {
-                                            "type": "object",
-                                            "properties": {
-                                                "AppEndPoint": {
-                                                    "ApplicationEndPointSpecifier": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "APIVersion": {
-                                                                "type": "string",
-                                                                "enum": [
-                                                                    "1.0"
-                                                                ]
-                                                            },
-                                                            "EndPointID": {
-                                                                "type": "string",
-                                                                "description": "The NICE Identifier for the Application that is ultimatley the end point for messages."
-                                                            },
-                                                            "X.509Certificate": {
-                                                                "type": "string"
-                                                            },
-                                                            "AccessToken": {
-                                                                "type": "string",
-                                                                "description": "This token is used by the receiving NICE entity. It shall always comply ot the JWT (RFC 7519) format"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "APIVersion",
-                                                            "EndPointID"
-                                                        ]
-                                                    }
-                                                },
-                                                "NetEndPoint": {
-                                                    "NetworkEndPointSpecifier": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "APIVersion": {
-                                                                "type": "string",
-                                                                "enum": [
-                                                                    "1.0"
-                                                                ]
-                                                            },
-                                                            "EndPointID": {
-                                                                "type": "string"
-                                                            },
-                                                            "NodeID": {
-                                                                "type": "string"
-                                                            },
-                                                            "PortID": {
-                                                                "type": "string"
-                                                            },
-                                                            "Scheme": {
-                                                                "type": "array",
-                                                                "uniqueItems": True,
-                                                                "items": {
-                                                                    "anyOf": [
-                                                                        {
-                                                                            "MQTTScheme": {
-                                                                                "type": "object",
-                                                                                "title": "Network end point specifier for MQTT",
-                                                                                "properties": {
-                                                                                    "Protocol": {
-                                                                                        "type": "string",
-                                                                                        "enum": [
-                                                                                            "MQTT"
-                                                                                        ]
-                                                                                    },
-                                                                                    "Authority": {
-                                                                                        "type": "string"
-                                                                                    },
-                                                                                    "Username": {
-                                                                                        "type": "string"
-                                                                                    },
-                                                                                    "Password": {
-                                                                                        "type": "string",
-                                                                                        "description": "Network AccessToken."
-                                                                                    },
-                                                                                    "ClientID": {
-                                                                                        "type": "string"
-                                                                                    },
-                                                                                    "QoS": {
-                                                                                        "type": "integer",
-                                                                                        "enum": [
-                                                                                            0,
-                                                                                            1,
-                                                                                            2
-                                                                                        ]
-                                                                                    }
-                                                                                },
-                                                                                "required": [
-                                                                                    "Protocol",
-                                                                                    "Authority",
-                                                                                    "Username",
-                                                                                    "Password",
-                                                                                    "ClientID"
-                                                                                ]
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "WebAPIScheme": {
-                                                                                "type": "object",
-                                                                                "title": "Network end point specifier for WebAPI",
-                                                                                "properties": {
-                                                                                    "Protocol": {
-                                                                                        "type": "string",
-                                                                                        "enum": [
-                                                                                            "WebAPI"
-                                                                                        ]
-                                                                                    },
-                                                                                    "Authority": {
-                                                                                        "type": "string"
-                                                                                    },
-                                                                                    "AccessToken": {
-                                                                                        "type": "string"
-                                                                                    },
-                                                                                    "Role": {
-                                                                                        "type": "string",
-                                                                                        "description": "If set to Client, the port shall initiate GET or SET data requests. If Server then the port shall act as a server. ",
-                                                                                        "enum": [
-                                                                                            "Client",
-                                                                                            "Server"
-                                                                                        ]
-                                                                                    },
-                                                                                    "ValidationKey": {
-                                                                                        "$ref": "#/definitions/PublicKey"
-                                                                                    }
-                                                                                },
-                                                                                "required": [
-                                                                                    "Protocol",
-                                                                                    "Authority"
-                                                                                ]
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "WebRTCScheme": {
-                                                                                "type": "object",
-                                                                                "title": "Network end point specifier for WebRTC",
-                                                                                "properties": {
-                                                                                    "Protocol": {
-                                                                                        "type": "string",
-                                                                                        "enum": [
-                                                                                            "WebRTC"
-                                                                                        ]
-                                                                                    },
-                                                                                    "IceServers": {
-                                                                                        "type": "array",
-                                                                                        "uniqueItems": True,
-                                                                                        "items": {
-                                                                                            "type": "object",
-                                                                                            "properties": {
-                                                                                                "urls": {
-                                                                                                    "type": "array",
-                                                                                                    "uniqueItems": True,
-                                                                                                    "items": {
-                                                                                                        "type": "string",
-                                                                                                        "description": "STUN/TURN server URL. e.g. turn:turnserver.example.org"
-                                                                                                    }
-                                                                                                },
-                                                                                                "username": {
-                                                                                                    "type": "string"
-                                                                                                },
-                                                                                                "credential": {
-                                                                                                    "type": "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "required": [
-                                                                                                "urls"
-                                                                                            ]
-                                                                                        }
-                                                                                    }
-                                                                                },
-                                                                                "required": [
-                                                                                    "Protocol"
-                                                                                ]
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "type": "object",
-                                                                            "title": "Network end point specifier for local connection",
-                                                                            "properties": {
-                                                                                "Protocol": {
-                                                                                    "type": "string",
-                                                                                    "enum": [
-                                                                                        "Local"
-                                                                                    ]
-                                                                                }
-                                                                            },
-                                                                            "required": [
-                                                                                "Protocol"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "APIVersion",
-                                                            "EndPointID",
-                                                            "Scheme"
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            "required": [
-                                                "NetEndPoint"
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "EncryptionOn",
-                                        "SceneEncryptionKeyID"
-                                    ]
-                                }
-                            ]
-                        }
                     }
                 },
                 "required": [
@@ -705,29 +711,12 @@ scenemark_schema = {
                 "description": "If this value is set to 20s the node should not generaate another SceneMark for 20s after the first SceneMark was generated.",
                 "properties": {
                     "Analysis": {
-                        "type": "string",
-                        "enum": [
-                            "Motion",
-                            "Snapshot",
-                            "Scheduled",
-                            "Continuous",
-                            "Label",
-                            "ItemPresence",
-                            "Loitering",
-                            "Intrusion",
-                            "Falldown",
-                            "Violence",
-                            "Fire",
-                            "Abandonment",
-                            "SpeedGate",
-                            "Xray",
-                            "Facility",
-                            "Custom"
-                        ]
+                        "type": "string"
                     },
                     "AnalysisStage": {
                         "type": "string",
                         "enum": [
+                            "CustomAnalysis",
                             "Motion",
                             "Detect",
                             "Recognize",
@@ -745,6 +734,9 @@ scenemark_schema = {
                     "CustomAnalysisStage": {
                         "type": ["string", "null"],
                         "description": "This defines analysis stages that are proprietary."
+                    },
+                    "ExecuteOnPipeline": {
+                        "type": "boolean"
                     },
                     "LabelRefDataList": {
                         "type": ["array", "null"],
@@ -842,7 +834,12 @@ scenemark_schema = {
                                     "type": "object",
                                     "properties": {
                                         "Severity": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "enum": [
+                                                "None",
+                                                "Warning",
+                                                "Critical"
+                                            ]
                                         },
                                         "Coords": {
                                             "type": "array",
@@ -972,6 +969,12 @@ scenemark_schema = {
                             }
                         ]
                     },
+                    "StartTimeRelTrigger": {
+                        "type": ["number", "null"]
+                    },
+                      "EndTimeRelTrigger": {
+                        "type": ["number", "null"]
+                    },
                     "SceneMarkWindow": {
                         "type": ["number", "null"],
                         "description": "The period of time during which after a first SceneMark is generate a second SceneMark is not generated. For example if set to 10 no new SceneMark should be sent for 10 seconds."
@@ -997,14 +1000,24 @@ scenemark_schema = {
                             }
                         }
                     },
-                    "Blur": {
-                        "type": ["array", "null"],
-                        "items": {
-                            "type": "string",
-                            "enum": [
-                                "Face",
-                                "Text"
-                            ]
+                    "Blurring": {
+                        "type": ["object", "null"],
+                        "properties": {
+                          "Blurring": {
+                            "type": "object",
+                            "properties": {
+                              "Blur": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "ExecuteOnPipeline": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": ["Blur", "ExecuteOnPipeline"]
+                          }
                         }
                     },
                     "DrawBoundingBoxes": {

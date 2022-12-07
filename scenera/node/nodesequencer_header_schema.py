@@ -65,16 +65,16 @@ nodesequencer_header_schema = {
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "X": {
+                "XCoord": {
                     "type": "number"
                 },
-                "Y": {
+                "YCoord": {
                     "type": "number"
                 }
             },
             "required": [
-                "X",
-                "Y"
+                "XCoord",
+                "YCoord"
             ],
             "title": "Polygon"
         }

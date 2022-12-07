@@ -65,7 +65,7 @@ def get_regions_of_interest(nodesequencer_header):
     try:
         regions = []
         for polygon in nodesequencer_header['NodeInput']['RegionsOfInterest']:
-            region = [(coord['X'],coord['Y']) for coord in polygon['Polygon']]
+            region = [(coord['XCoord'],coord['YCoord']) for coord in polygon['Polygon']]
             if len(region) >= 3:
                 regions.append(region)
             else:

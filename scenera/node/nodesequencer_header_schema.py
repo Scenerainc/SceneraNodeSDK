@@ -34,7 +34,7 @@ nodesequencer_header_schema = {
             "additionalProperties": False,
             "properties": {
                 "DataTypeMode": {
-                    "type": ["integer", "null"]
+                    "type": ["string", "null"]
                 },
                 "RegionsOfInterest": {
                     "type": ["array", "null"],

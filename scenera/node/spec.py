@@ -21,6 +21,10 @@ EventType = frozenset([
     "Facility",
     "Scheduled",
     "Test",
+    "HatOff",
+    "LightOff",
+    "PosBreak",
+    "IllegalStay"
     ])
 
 NICEItemType = frozenset([
@@ -99,30 +103,3 @@ AudioMediaFormat = frozenset([
 Status = frozenset([
     "Available at Provided URI",
     "Upload in Progress"])
-
-DataTypeEnumDict = {
-    0 : 'Thumbnail',
-    1 : 'RGBStill',
-    2 : 'IRStill',
-    3 : 'DepthStill',
-    4 : 'RGBStereoStill',
-    5 : 'ThermalStill',
-    6 : 'RGBVideo',
-    7 : 'IRVideo',
-    8 : 'DepthVideo',
-    9 : 'RGBStereoVideo',
-    10: 'ThermalVision',
-    11: 'Audio',
-    12: 'Temperature',
-    13: 'Humidity',
-    14: 'PIR',
-    15: 'CarbonMonoxide',
-    16: 'AudioTranscript',
-    17: 'IRDetection',
-    18: 'Pressure',
-    19: 'Proximity',
-    20: 'LiquidLevel',
-    21: 'Acceleration',
-    22: 'Rotatioan',
-    23: 'Other',
-}

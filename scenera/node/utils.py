@@ -6,7 +6,7 @@ Helper functions
 import logging
 from .logger import configure_logger
 from .validators import ValidationError
-from .spec import DataTypeEnumDict
+from .spec import DataType
 
 logger = logging.getLogger(__name__)
 logger = configure_logger(logger, debug=True)
@@ -40,12 +40,11 @@ def extract_node_datatype_mode(nodesequencer_header):
     :rtype: string
     """
     try:
-        datatype_index = nodesequencer_header['NodeInput']['DataTypeMode']
+        datatype_mode = nodesequencer_header['NodeInput']['DataTypeMode']
     # We default to using the RGBStill image in case it is not defined
     except Exception as _e:
         logger.warning(f"NodeInput and/or DataTypeMode missing, setting default to RGBStill. ({_e})")
-        datatype_index = 1
-    datatype_mode = DataTypeEnumDict[datatype_index]
+        datatype_mode = "RGBStill"
     logger.info(f"DataTypeMode: {datatype_mode}")
     return datatype_mode
 

@@ -945,7 +945,7 @@ scenemark_schema = {
                     "type": "string"
                   },
                   "ParamValue": {
-                    "type": "number"
+                    "type": "string"
                   }
                 }
               }

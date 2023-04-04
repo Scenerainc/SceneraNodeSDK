@@ -92,6 +92,7 @@ MediaFormat = frozenset([
     "H265",
     "RAW",
     "JSON",
+    "HLS-TS",
     ])
 
 AudioMediaFormat = frozenset([

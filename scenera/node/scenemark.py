@@ -62,27 +62,30 @@ class SceneMark:
         request,
         node_id : str,
         disable_token_verification: bool = False,
+        disable_linter: bool = False
         ):
 
         # --- Validation
-
-        # Verify that we get an address to return the SceneMark z
         self.nodesequencer_header = request.json['NodeSequencerHeader']
         if not disable_token_verification:
             validate_jwt_token(self.nodesequencer_header['NodeToken'])
-        request_json_validator(
-            self.nodesequencer_header,
-            nodesequencer_header_schema,
-            "NodeSequencer Header"
-            )
 
-        # Verify SceneMark input to match the Spec
         self.scenemark = request.json['SceneMark']
-        request_json_validator(
-            self.scenemark,
-            scenemark_schema,
-            "SceneMark"
-            )
+
+        self.disable_linter = disable_linter
+        if not self.disable_linter:
+            request_json_validator(
+                self.nodesequencer_header,
+                nodesequencer_header_schema,
+                "NodeSequencer Header"
+                )
+
+            # Verify SceneMark input to match the Spec
+            request_json_validator(
+                self.scenemark,
+                scenemark_schema,
+                "SceneMark"
+                )
 
         logger.info(f"Processing SceneMark: {self.scenemark['SceneMarkID']}")
 
@@ -742,7 +745,8 @@ class SceneMark:
         """
 
         # Update our original request with the updated SceneMark
-        request_json_validator(self.scenemark, scenemark_schema, "SceneMark schema")
+        if not self.disable_linter:
+            request_json_validator(self.scenemark, scenemark_schema, "SceneMark schema")
 
         scenemark = json.dumps(self.scenemark)
         if test:

@@ -1,10 +1,6 @@
 name: Publish Python distributions to PyPI
 
 on:
-  push:
-    branches:
-      - master
-      - main
   pull_request:
     branches:
       - master
@@ -36,4 +32,4 @@ jobs:
             uses: pypa/gh-action-pypi-publish@release/v1
             with:
                 password: ${{ secrets.PYPI_TOKEN }}
-                repository_url: https://upload.pypi.org/legacy/
+                repository-url: https://upload.pypi.org/legacy/

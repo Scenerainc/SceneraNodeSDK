@@ -1,9 +1,6 @@
 name: Publish Python distributions to TestPyPI
 
 on:
-  push:
-    branches:
-      - staging
   pull_request:
     branches:
       - staging
@@ -34,4 +31,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.TEST_PYPI_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
+          repository-url: https://test.pypi.org/legacy/

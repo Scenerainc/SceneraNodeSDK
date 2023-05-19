@@ -268,7 +268,7 @@ scenemark_schema = {
       }
     },
     "ThumbnailList": {
-      "type": "array",
+      "type": ["array", "null"],
       "items": {
         "type": "object",
         "properties": {

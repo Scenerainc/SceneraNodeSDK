@@ -384,6 +384,23 @@ scenemark_schema = {
                   "type": ["number", "null"],
                   "description": "Certainty of the Attribute According to the Algorithm"
                 },
+                "Frame": {
+                  "type": ["integer", "null"],
+                },
+                "TimeStamp": {
+                  "type": ["string", "null"],
+                },
+                "DirectionalMovement": {
+                  "type": ["object", "null"],
+                  "properties": {
+                  "ID": {
+                    "type": "string"
+                    },
+                  "URI": {
+                    "type": ["string", "null"]
+                    }
+                  }
+                },
                 "Attributes": {
                   "type": ["array", "null"],
                   "description": "Different AI algorithms are capable of identifying different attribute of objects that have been identified. For example if a face is detected the attribute may be \"smiling\". These attributes depend on the AI algorithm used and are not specified.",

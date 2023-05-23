@@ -819,7 +819,8 @@ class SceneMark:
             verify=verify,
             stream=False)
         try:
-            logger.info(f"Returned SceneMark to NodeSquencer: {answer, json.dumps(answer.json(), indent = 3)}")
+            logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
+            print(json.dumps(answer.json(), indent = 3))
         except:
             logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
 

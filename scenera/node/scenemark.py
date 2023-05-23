@@ -771,7 +771,10 @@ class SceneMark:
             headers=ns_header,
             verify=verify,
             stream=False)
-        logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
+        try:
+            logger.info(f"Returned SceneMark to NodeSquencer: {answer, json.dumps(answer.json(), indent = 3)}")
+        except:
+            logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
 
     # Helper Functions
     @staticmethod

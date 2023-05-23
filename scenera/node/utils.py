@@ -88,5 +88,5 @@ def get_latest_scenedata_version_number(scenemark):
     try:
         return max([sd_item['VersionNumber'] for sd_item in scenemark['SceneDataList']])
     except ValueError:
-        logger.exception("There is no SceneData attached to this SceneMark.")
+        logger.warning("There is no SceneData attached to this SceneMark.")
         return 0.0

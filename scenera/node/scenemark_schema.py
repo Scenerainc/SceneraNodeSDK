@@ -268,7 +268,7 @@ scenemark_schema = {
       }
     },
     "ThumbnailList": {
-      "type": "array",
+      "type": ["array", "null"],
       "items": {
         "type": "object",
         "properties": {
@@ -383,6 +383,23 @@ scenemark_schema = {
                 "Probability": {
                   "type": ["number", "null"],
                   "description": "Certainty of the Attribute According to the Algorithm"
+                },
+                "Frame": {
+                  "type": ["integer", "null"],
+                },
+                "TimeStamp": {
+                  "type": ["string", "null"],
+                },
+                "DirectionalMovement": {
+                  "type": ["object", "null"],
+                  "properties": {
+                  "ID": {
+                    "type": "string"
+                    },
+                  "URI": {
+                    "type": ["string", "null"]
+                    }
+                  }
                 },
                 "Attributes": {
                   "type": ["array", "null"],

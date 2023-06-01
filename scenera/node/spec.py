@@ -24,7 +24,9 @@ EventType = frozenset([
     "HatOff",
     "LightOff",
     "PosBreak",
-    "IllegalStay"
+    "IllegalStay",
+    "RevIntrustion",
+    "LineCrossing"
     ])
 
 NICEItemType = frozenset([

@@ -357,6 +357,36 @@ class SceneMark:
 
         return bounding_box_item
 
+    @staticmethod    
+    def generate_directional_movement_item(id : str, uri : str = None):
+        """
+        Generate a directional movement item dictionary with specified ID and URI.
+
+        This method creates a dictionary with keys 'ID' and 'URI' and assigns the 
+        provided values to these keys. This dictionary represents a directional 
+        movement item.
+
+        :param id: The ID to assign to the 'ID' key in the resulting dictionary
+        :type id: str
+        :param uri: The URI to assign to the 'URI' key in the resulting dictionary
+        :type uri: str
+
+        :return: The resulting dictionary representing a directional movement item.
+        :rtype: dict
+
+        Example
+        -------
+
+        >>> generate_directional_movement_item('123', 'http://example.com')
+        {'ID': '123', 'URI': 'http://example.com'}
+        """
+        dm_item = {}
+        dm_item['ID'] = id
+        dm_item['URI'] = uri
+        logger.info(f"DirectionalMovement of ID: {id} & URI: {uri} created")
+        
+        return dm_item
+
     def generate_attribute_item(
         self,
         attribute : str,
@@ -398,32 +428,15 @@ class SceneMark:
         return attribute_item
     
     @staticmethod
-    def generate_directional_movement_item(track_guid: str, track_uri: str = "") -> dict:
-        """
-        Generate a directional movement item.
-
-        :param track_guid: The GUID of the track.
-        :type track_guid: str
-        :param track_uri: The URI of the track.
-        :type track_uri: str
-        :return: The directional movement item.
-        :rtype: dict
-        """
-        directional_movement = {}
-        directional_movement['ID'] = track_guid
-        directional_movement['URI'] = track_uri
-
-        logger.info("DirectionalMovement item created.")
-        return directional_movement
-
-    @staticmethod
     def generate_detected_object_item(
         nice_item_type : str,
-        related_scenedata_id : str,
+        related_scenedata_id : str = "None",
         custom_item_type : str = "",
         item_id : str = "",
         item_type_count : int = 1,
         probability : float = 1.0,
+        frame : int = 0, 
+        timestamp : str = "",
         directional_movement : dict = None,
         attributes : list = [],
         bounding_box : dict = None,
@@ -444,6 +457,12 @@ class SceneMark:
                 "ID": "123-track1-123",\n
                 "URI": "mystorage.com/123-track-123?acessTOKEN"\n
             },\n
+            "Frame": 10,
+            "TimeStamp": "",
+            "DirectionalMovement": {
+                "ID": "123",
+                "URI": "https://example.com"
+            },
             "Attributes": [\n
                 {\n
                     "VersionNumber": 1.0,\n
@@ -472,20 +491,25 @@ class SceneMark:
             E.g. Name of the person Defaults to "". Optional.
         :type item_id: string
         :param item_type_count: Counting the amount of the stated NICEItemType,
-            optional, defaults to 1,
+            optional, defaults to 1.
         :type item_type_count: int
         :param probability: Indicating the confidence on the item. Optional, defaults to 1.0.
         :type probability: float
         :param directional_movement: Contains the track_id & track_uri
         :type directional_movement: dictionary
+        :param frame: Frame number where the item is detected. Defaults to 0.
+        :type frame: int
+        :param timestamp: Timestamp when the item is detected. Defaults to "".
+        :type timestamp: str
+        :param directional_movement: Contains directional movement item, defaults to None
+        :type directional_movement: dict
         :param attributes: Contains attribute items, defaults to []
         :type attributes: list
         :param bounding_box: Contains the bounding box, defaults to None
-        :type bounding_box: dictionary
+        :type bounding_box: dict
         :return: dictionary containing a DetectedObject item, see example.
         :rtype: dict
         """
-
         assert nice_item_type in NICEItemType, \
             logger.exception("This Item Type is not part of the Spec.")
 
@@ -496,6 +520,8 @@ class SceneMark:
         detected_object['ItemID'] = item_id
         detected_object['ItemTypeCount'] = item_type_count
         detected_object['Probability'] = probability
+        detected_object['Frame'] = frame
+        detected_object['TimeStamp'] = timestamp
         detected_object['DirectionalMovement'] = directional_movement
         detected_object['Attributes'] = attributes
         detected_object['BoundingBox'] = bounding_box
@@ -798,7 +824,11 @@ class SceneMark:
             headers=ns_header,
             verify=verify,
             stream=False)
-        logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
+        try:
+            logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
+            print(json.dumps(answer.json(), indent = 3))
+        except:
+            logger.info(f"Returned SceneMark to NodeSequencer: {answer}")
 
     # Helper Functions
     @staticmethod

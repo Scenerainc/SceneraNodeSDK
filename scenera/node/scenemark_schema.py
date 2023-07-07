@@ -297,27 +297,7 @@ scenemark_schema = {
             "description": "Each algorithm and set of weights has a unique ID that is defined by NICE. This value shall be carried in this record."
           },
           "EventType": {
-            "type": "string",
-            "enum": [
-              "ItemPresence",
-              "RegionOfInterest",
-              "Custom",
-              "Loitering",
-              "Intrusion",
-              "Falldown",
-              "Violence",
-              "Fire",
-              "Abandonment",
-              "SpeedGate",
-              "Xray",
-              "Facility",
-              "Scheduled",
-              "LightOff",
-              "IllegalStay",
-              "HatOff",
-              "PosBreak",
-              "Test"
-            ]
+            "type": "string"
           },
           "CustomEventType": {
             "type": ["string", "null"]

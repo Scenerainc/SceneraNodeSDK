@@ -358,7 +358,7 @@ class SceneMark:
         return bounding_box_item
 
     @staticmethod    
-    def generate_directional_movement_item(id, uri):
+    def generate_directional_movement_item(id : str, uri : str = None):
         """
         Generate a directional movement item dictionary with specified ID and URI.
 
@@ -426,7 +426,7 @@ class SceneMark:
 
         logger.info(f"Attribute item of {attribute}:{value} created")
         return attribute_item
-
+    
     @staticmethod
     def generate_detected_object_item(
         nice_item_type : str,
@@ -453,6 +453,10 @@ class SceneMark:
             "ItemID": "Chris",\n
             "ItemTypeCount": 1,\n
             "Probability": 0.93,\n
+            "DirectionalMovement": {\n
+                "ID": "123-track1-123",\n
+                "URI": "mystorage.com/123-track-123?acessTOKEN"\n
+            },\n
             "Frame": 10,
             "TimeStamp": "",
             "DirectionalMovement": {
@@ -491,6 +495,8 @@ class SceneMark:
         :type item_type_count: int
         :param probability: Indicating the confidence on the item. Optional, defaults to 1.0.
         :type probability: float
+        :param directional_movement: Contains the track_id & track_uri
+        :type directional_movement: dictionary
         :param frame: Frame number where the item is detected. Defaults to 0.
         :type frame: int
         :param timestamp: Timestamp when the item is detected. Defaults to "".

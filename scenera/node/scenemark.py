@@ -396,6 +396,25 @@ class SceneMark:
 
         logger.info(f"Attribute item of {attribute}:{value} created")
         return attribute_item
+    
+    @staticmethod
+    def generate_directional_movement_item(track_guid: str, track_uri: str = "") -> dict:
+        """
+        Generate a directional movement item.
+
+        :param track_guid: The GUID of the track.
+        :type track_guid: str
+        :param track_uri: The URI of the track.
+        :type track_uri: str
+        :return: The directional movement item.
+        :rtype: dict
+        """
+        directional_movement = {}
+        directional_movement['ID'] = track_guid
+        directional_movement['URI'] = track_uri
+
+        logger.info("DirectionalMovement item created.")
+        return directional_movement
 
     @staticmethod
     def generate_detected_object_item(
@@ -405,6 +424,7 @@ class SceneMark:
         item_id : str = "",
         item_type_count : int = 1,
         probability : float = 1.0,
+        directional_movement : dict = None,
         attributes : list = [],
         bounding_box : dict = None,
         ):
@@ -420,6 +440,10 @@ class SceneMark:
             "ItemID": "Chris",\n
             "ItemTypeCount": 1,\n
             "Probability": 0.93,\n
+            "DirectionalMovement": {\n
+                "ID": "123-track1-123",\n
+                "URI": "mystorage.com/123-track-123?acessTOKEN"\n
+            },\n
             "Attributes": [\n
                 {\n
                     "VersionNumber": 1.0,\n
@@ -452,6 +476,8 @@ class SceneMark:
         :type item_type_count: int
         :param probability: Indicating the confidence on the item. Optional, defaults to 1.0.
         :type probability: float
+        :param directional_movement: Contains the track_id & track_uri
+        :type directional_movement: dictionary
         :param attributes: Contains attribute items, defaults to []
         :type attributes: list
         :param bounding_box: Contains the bounding box, defaults to None
@@ -470,6 +496,7 @@ class SceneMark:
         detected_object['ItemID'] = item_id
         detected_object['ItemTypeCount'] = item_type_count
         detected_object['Probability'] = probability
+        detected_object['DirectionalMovement'] = directional_movement
         detected_object['Attributes'] = attributes
         detected_object['BoundingBox'] = bounding_box
 

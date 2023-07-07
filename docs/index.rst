@@ -1,16 +1,15 @@
 .. scenera.node documentation master file, created by
-   sphinx-quickstart on Mon Dec 20 16:51:04 2021.
+   sphinx-quickstart on Thu May 25 01:32:31 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the documentation of the Scenera Node SDK!
-=====================================================
+Welcome to scenera.node's documentation!
+========================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   ./api/scenera-node
 
 
 Indices and tables

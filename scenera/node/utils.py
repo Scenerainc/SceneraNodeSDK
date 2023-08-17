@@ -90,3 +90,20 @@ def get_latest_scenedata_version_number(scenemark):
     except ValueError:
         logger.warning("There is no SceneData attached to this SceneMark.")
         return 0.0
+
+def pascal(input_dict):
+    """Convert snake_case keys to PascalCase, keeping 'ID' and 'NICE' uppercase."""
+
+    new_dict = {}
+
+    for key in input_dict:
+        components = key.split('_')
+        # Convert each component, but keep 'ID' and 'NICE' as is
+        pascal_components = ['ID' if comp.upper() == "ID" \
+                            else 'NICE' if comp.upper() == "NICE" \
+                            else comp.title() for comp in components]
+        new_key = ''.join(pascal_components)
+        new_dict[new_key] = input_dict[key]
+
+    return new_dict
+

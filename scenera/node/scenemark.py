@@ -13,12 +13,12 @@ import logging
 import random
 import requests
 import urllib3
+from typing import Dict, Any, List, Optional
 from .jwt_decode import validate_jwt_token
 from .logger import configure_logger
 from .nodesequencer_header_schema import nodesequencer_header_schema
 from .scenemark_schema import scenemark_schema
 from .spec import (
-    EventType,
     NICEItemType,
     ProcessingStatus,
     DataType,
@@ -28,7 +28,8 @@ from .utils import (
     get_my_version_number,
     extract_node_datatype_mode,
     get_regions_of_interest,
-    get_latest_scenedata_version_number
+    get_latest_scenedata_version_number,
+    pascal,
     )
 from .validators import (
     ValidationError,
@@ -61,8 +62,10 @@ class SceneMark:
         self,
         request,
         node_id : str,
+        node_name : str = "",
+        tracking : bool = False,
         disable_token_verification: bool = False,
-        disable_linter: bool = False
+        disable_linter: bool = True
         ):
 
         # --- Validation
@@ -91,6 +94,7 @@ class SceneMark:
 
         # --- Set Node Parameters
         self.node_id = node_id
+        self.node_name = node_name
         self.device_id = self.scenemark['SceneMarkID'][41:45]
 
         # --- Version Control
@@ -107,7 +111,11 @@ class SceneMark:
         # --- Node Objectives
 
         # Get the DataType the Node works on
-        self.node_datatype_mode = extract_node_datatype_mode(self.nodesequencer_header)
+        if not tracking:
+            self.node_datatype_mode = extract_node_datatype_mode(self.nodesequencer_header)
+            # Get the targets to work on
+            self.targets = self.get_scenedata_uri_list()
+            logger.info(f"Working on these items: {self.targets}")
 
         # Get the polygon if there is one.
         self.regions_of_interest = get_regions_of_interest(self.nodesequencer_header)
@@ -115,10 +123,13 @@ class SceneMark:
         # Find the latest scenedata additions
         self.latest_sd_version = get_latest_scenedata_version_number(self.scenemark)
 
-        # Get the targets to work on
-        self.targets = self.get_scenedata_uri_list()
-
-        logger.info(f"Working on these items: {self.targets}")
+        # --- ProcessingType
+        try:
+            self.processing_type = self.scenemark['ProcessingType']
+            logger.info(f"ProcessingType: {self.processing_type}")
+        except:
+            logger.warning("No ProcessingType mentioned in the SceneMark")
+            self.processing_type = "Standard"
 
     def save_request(self, request_type : str, name : str):
         """
@@ -253,29 +264,8 @@ class SceneMark:
 
     def get_detected_objects_from_sd_id(self, scenedata_id):
         """
-        Creates a list of DetectedObjects that have thge pased
+        Creates a list of DetectedObjects that have the passed
         SceneDataID listed as RelatedSceneData.
-
-        [\n
-            {\n
-                {\n
-                  "NICEItemType": "Human",\n
-                  "CustomItemType": "",\n
-                  "ItemID": "",\n
-                  "ItemTypeCount": 1,\n
-                  "Probability": 0.95,\n
-                  "Attributes": [\n
-                  ],\n
-                  "BoundingBox": {\n
-                      "XCoordinate": 0.0244,\n
-                      "YCoordinate": 0.4522,\n
-                      "Height": 0.873,\n
-                      "Width": 0.566,\n
-                  },\n
-                  "RelatedSceneData": "SDT_3c84184e-7a50-449e-af06-dcdf415bebce_c88e_360302"\n
-              }\n
-            }\n
-        ]
 
         :return: list of DetectedObjects
         :rtype: list
@@ -285,6 +275,9 @@ class SceneMark:
             for det_object_item in analysis_list_item['DetectedObjects']:
                 if det_object_item['RelatedSceneData'] == scenedata_id:
                     det_objects.append(det_object_item)
+                for sd_list_item in det_object_item['RelatedSceneDataList']:
+                    if sd_list_item['SceneDataID'] == scenedata_id:
+                        det_objects.append(det_object_item)
         return det_objects
 
     def get_detected_objects_from_sd_uri(self, scenedata_uri):
@@ -297,6 +290,37 @@ class SceneMark:
         """
         id = self.get_id_from_uri(scenedata_uri)
         return self.get_detected_objects_from_sd_id(id)
+
+    def get_detected_objects_by_key_value(self, key, value, linked = False):
+        """
+        Retrieves a list of (Linked)DetectedObjects that match the provided key-value pair.
+
+        :param key: The key to search for within DetectedObjects.
+        :type key: str
+        :param value: The value to match for the provided key.
+        :type value: any
+        :return: list of (Linked)DetectedObjects that match the key-value criteria.
+        :rtype: list
+        :raises ValueError: If the provided key's value is a list or if the key does not exist.
+        """
+        if not self.scenemark or 'AnalysisList' not in self.scenemark:
+            raise ValueError("Invalid or missing 'scenemark' structure.")
+
+        if linked:
+            prefix = "Linked"
+        else:
+            prefix = ""
+
+        det_objects = []
+        for analysis_list_item in self.scenemark['AnalysisList']:
+            for det_object_item in analysis_list_item[f'{prefix}DetectedObjects']:
+                if key not in det_object_item:
+                    raise ValueError(f"The key '{key}' does not exist in {prefix}DetectedObjects.")
+                if isinstance(det_object_item[key], list):
+                    raise ValueError(f"The value for the key '{key}' is a list, which is not supported.")
+                if det_object_item[key] == value:
+                    det_objects.append(det_object_item)
+        return det_objects
 
     def generate_scenedata_id(self):
         """
@@ -347,7 +371,7 @@ class SceneMark:
             and isinstance(y_c, float) \
             and isinstance(height, float) \
             and isinstance(width, float)), \
-            logger.exception("Arguments need to be integers")
+            logger.exception("Arguments need to be floats")
 
         bounding_box_item = {}
         bounding_box_item['XCoordinate'] = x_c
@@ -357,38 +381,17 @@ class SceneMark:
 
         return bounding_box_item
 
-    @staticmethod    
-    def generate_directional_movement_item(id : str, uri : str = None):
-        """
-        Generate a directional movement item dictionary with specified ID and URI.
+    @staticmethod
+    def generate_related_sd_list_item(
+        data_type : str,
+        scene_data_id : str,
+        ):
+        assert data_type in DataType, \
+            logger.exception("DataType not recognised")
+        return pascal(locals())
 
-        This method creates a dictionary with keys 'ID' and 'URI' and assigns the 
-        provided values to these keys. This dictionary represents a directional 
-        movement item.
-
-        :param id: The ID to assign to the 'ID' key in the resulting dictionary
-        :type id: str
-        :param uri: The URI to assign to the 'URI' key in the resulting dictionary
-        :type uri: str
-
-        :return: The resulting dictionary representing a directional movement item.
-        :rtype: dict
-
-        Example
-        -------
-
-        >>> generate_directional_movement_item('123', 'http://example.com')
-        {'ID': '123', 'URI': 'http://example.com'}
-        """
-        dm_item = {}
-        dm_item['ID'] = id
-        dm_item['URI'] = uri
-        logger.info(f"DirectionalMovement of ID: {id} & URI: {uri} created")
-        
-        return dm_item
-
+    @staticmethod
     def generate_attribute_item(
-        self,
         attribute : str,
         value : str,
         probability_of_attribute : float = 1.0,
@@ -400,7 +403,6 @@ class SceneMark:
         :Example:
 
         {\n
-            "VersionNumber": 1.0,\n
             "Attribute": "Mood",\n
             "Value": "Anger",\n
             "ProbabilityOfAttribute": 0.8\n
@@ -416,10 +418,8 @@ class SceneMark:
 
         :return: attribute item
         :rtype: dict
-
         """
         attribute_item = {}
-        attribute_item['VersionNumber'] = self.my_version_number
         attribute_item['Attribute'] = attribute
         attribute_item['Value'] = value
         attribute_item['ProbabilityOfAttribute'] = probability_of_attribute
@@ -428,18 +428,46 @@ class SceneMark:
         return attribute_item
     
     @staticmethod
+    def generate_polygon_item(type: str, value: list[float]) -> dict:
+        """
+        Generate a polygon item with the given type and value.
+
+        :param type: The type of the polygon item.
+        :type type: str
+        :param value: A list of float values representing the polygon.
+        :type value: list[float]
+        :raises ValueError: If value is not a list or if any element in the list is not a float.
+        :return: A dictionary representing the polygon item.
+        :rtype: dict
+        """
+
+        # Check if value is a list
+        if not isinstance(value, list):
+            raise ValueError("Value must be a list of floats.")
+
+        # Check if all elements in the list are floats
+        if not all(isinstance(item, float) for item in value):
+            raise ValueError("All elements in the list must be floats.")
+
+        polygon_item = {}
+        polygon_item['Type'] = type
+        polygon_item['Value'] =  value
+        return polygon_item
+
+    @staticmethod
     def generate_detected_object_item(
         nice_item_type : str,
-        related_scenedata_id : str = "None",
         custom_item_type : str = "",
+        directional_movement_id : str = "",
         item_id : str = "",
-        item_type_count : int = 1,
         probability : float = 1.0,
         frame : int = 0, 
         timestamp : str = "",
-        directional_movement : dict = None,
         attributes : list = [],
         bounding_box : dict = None,
+        polygon : dict = None,
+        related_scenedata_id : str = "None",
+        related_scenedata_list : list = [],
         ):
         # pylint: disable=dangerous-default-value
         """
@@ -453,19 +481,11 @@ class SceneMark:
             "ItemID": "Chris",\n
             "ItemTypeCount": 1,\n
             "Probability": 0.93,\n
-            "DirectionalMovement": {\n
-                "ID": "123-track1-123",\n
-                "URI": "mystorage.com/123-track-123?acessTOKEN"\n
-            },\n
-            "Frame": 10,
-            "TimeStamp": "",
-            "DirectionalMovement": {
-                "ID": "123",
-                "URI": "https://example.com"
-            },
+            "DirectionalMovementID": "",\n
+            "Frame": 10,\n
+            "TimeStamp": "",\n
             "Attributes": [\n
                 {\n
-                    "VersionNumber": 1.0,\n
                     "Attribute": "Mood",\n
                     "Value": "Anger",\n
                     "ProbabilityOfAttribute": 0.8\n
@@ -477,7 +497,17 @@ class SceneMark:
                 "Height": 10,\n
                 "Width": 10\n
             },\n
+            "Polygon": [\n
+                {\n
+                "Type": "3DPose1",\n
+                "Value": [1.0, 1.2, 1.4, 1.5]\n
+                }\n
+            ],\n
             "RelatedSceneData": "SDT_9cdff73f-5db1-4e64-9656-ef83bdfeeb90_0001_e4041246"\n
+            "RelatedSceneDataList: [\n
+                "SceneDataID": "SDT_9cdff73f-5db1-4e64-9656-ef83bdfeeb90_0001_e4041246",\n
+                "DataType": "Vector"\n
+            ]\n
         }
 
         :param nice_item_type: Indicating the NICEITemType found
@@ -516,31 +546,63 @@ class SceneMark:
         detected_object = {}
         detected_object['NICEItemType'] = nice_item_type
         detected_object['RelatedSceneData'] = related_scenedata_id
+        detected_object['RelatedSceneDataList'] =  related_scenedata_list
         detected_object['CustomItemType'] = custom_item_type
         detected_object['ItemID'] = item_id
-        detected_object['ItemTypeCount'] = item_type_count
         detected_object['Probability'] = probability
         detected_object['Frame'] = frame
         detected_object['TimeStamp'] = timestamp
-        detected_object['DirectionalMovement'] = directional_movement
+        detected_object['DirectionalMovementID'] = directional_movement_id
         detected_object['Attributes'] = attributes
         detected_object['BoundingBox'] = bounding_box
+        detected_object['Polygon'] = polygon
 
         logger.info(f"DetectedObjects item of NICEItemType '{nice_item_type}' generated")
         return detected_object
 
+    @staticmethod
+    def generate_time_frame(
+        start_time_stamp : str,
+        end_time_stamp : str,
+        ):
+        return pascal(locals())
+
+    @staticmethod
+    def generate_linked_detected_object(
+        directional_movement_id: str,
+        role: str,
+        time_frame: Dict[str, Any]
+        ) -> Dict[str, Any]:
+        """
+        Generate a linked detected object with the given parameters.
+
+        :param directional_movement_id: The ID for directional movement.
+        :type directional_movement_id: str
+        :param role: The role associated with the detected object.
+        :type role: str
+        :param time_frame: A dictionary representing the time frame.
+        :type time_frame: Dict[str, Any]
+        :return: A dictionary with keys converted to PascalCase.
+        :rtype: Dict[str, Any]
+        """
+        return pascal(locals())
+
     def add_analysis_list_item(
         self,
-        processing_status : str,
-        event_type : str,
-        custom_event_type : str = "",
-        analysis_description : str = "",
-        analysis_id : str = "",
-        total_item_count : int = 0,
-        error_message : str = "",
-        detected_objects : list = [],
+        processing_status: str,
+        node_id: str,
+        event_type: str,
+        event_category: str,
+        event_attributes: Optional[List] = None,
+        node_name: Optional[str] = "",
+        custom_event_type: Optional[str] = "",
+        analysis_description: Optional[str] = "",
+        analysis_id: Optional[str] = "",
+        total_item_count: Optional[int] = 0,
+        error_message: Optional[str] = "",
+        detected_objects: Optional[List] = None,
+        linked_detected_objects: Optional[List] = None
         ):
-        # pylint: disable=dangerous-default-value
         """
         Updates the SceneMark state with the unique analysis list item that is added by an AI Node.
         This could be considered the main event of the Node SDKs. Updates the SceneMark in place.
@@ -549,61 +611,82 @@ class SceneMark:
 
         {\n
             "VersionNumber": 1.0,\n
+            "NodeID": "some-node-id",\n
+            "EventType": "Loitering",\n
+            "EventCategory": "Some category",\n
+            "EventAttributes": [\n
+                {\n
+                "Attribute": "attribute",\n
+                "Value": "value",\n
+                "ProbabilityOfAttribute": 1.0\n
+                }\n
+            ],\n
+            "NodeName": "Some node name",\n
+            "CustomEventType": "",\n
             "AnalysisID": "9cdff73f-5db1-4e64-9656-ef83bdfeeb90",\n
             "AnalysisDescription": "Loitering detection",\n
-            "EventType": "Loitering",\n
-            "CustomEventType": "",\n
             "ProcessingStatus": "Detected",\n
             "ErrorMessage": "",\n
             "TotalItemCount": 4,\n
-            "DetectedObjects": [ .. ]\n
+            "DetectedObjects": [..],\n
+            "LinkedDetectedObjects": [..]\n
         }
 
-        :param processing_status: One the following values: 'CustomAnalysis', 'Motion', 'Detected',
-            'Recognized', 'Characterized', 'Undetected', 'Failed', 'Error'
-        :type processing_status: string
+        :param processing_status: Processing status values: 'CustomAnalysis', 'Motion', 'Detected',
+            'Recognized', 'Characterized', 'Undetected', 'Failed', 'Error'.
+        :type processing_status: str
+        :param node_id: The node identifier.
+        :type node_id: str
         :param event_type: Environment variable assigned to the Node through the Developer Portal.
-            The main thing this Node is 'interested in'. Can take the following range of values from
-            the Specification: 'Custom', 'ItemPresence', Loitering, Intrusion, Falldown, Violence,
-            Fire, Abandonment, SpeedGate, Xray, Facility
-        :type event_type: string
-        :param custom_event_type: Set when EventType is set to 'Custom', defaults to "". Optional
-        :type custom_event_type: string
-        :param analysis_description: string, default "", env variable assigned to the Node
-            through the Developer Portal. Used to describe what the analysis is about,
-            what it is 'doing'. By default set to an empty string. Optional.
-        :type analysis_description: string
-        :param analysis_id: Environment variable assigned to the Node through the Developer Portal.
-            Should be a unique identifier refering to the particular algorithm
-            used within the node. Defaults to "". Optional.
-        :type analysis_id: string
-        :param total_item_count: Total amount of items detected in the scene, defaults to 0
+            The main thing this Node is 'interested in'.
+        :type event_type: str
+        :param event_category: Category of the event.
+        :type event_category: str
+        :param event_attributes: Attributes of the event.
+        :type event_attributes: List
+        :param node_name: Name of the node. Optional.
+        :type node_name: str
+        :param custom_event_type: Set when EventType is 'Custom'. Optional.
+        :type custom_event_type: str
+        :param analysis_description: Description of the analysis. Optional.
+        :type analysis_description: str
+        :param analysis_id: Unique identifier for the analysis. Optional.
+        :type analysis_id: str
+        :param total_item_count: Total number of items detected. Default is 0.
         :type total_item_count: int
-        :param error_message: Used to propagate errors, optional, defaults to ""
-        :type error_message: string
-        :param detected_objects: Holds detected objects, defaults to an empty list
-        :type detected_objects: list
-
-        :raises AssertionError: When the ProcessingStatus is not recognized as part of the Spec.
-        :raises AssertionError: When the EventType is not recognized as part of the Spec.
+        :param error_message: Error message. Optional.
+        :type error_message: str
+        :param detected_objects: Detected objects. Optional.
+        :type detected_objects: List
+        :param linked_detected_objects: Linked detected objects. Optional.
+        :type linked_detected_objects: List
         """
 
-        assert event_type in EventType, logger.exception("EventType given not in Spec")
+        if event_attributes is None:
+            event_attributes = []
 
-        analysis_list_item = {}
-        analysis_list_item['VersionNumber'] = self.my_version_number
+        if detected_objects is None:
+            detected_objects = []
+
+        analysis_list_item = {
+            'VersionNumber': self.my_version_number,
+            'NodeID': node_id,
+            'EventType': event_type,
+            'EventCategory': event_category,
+            'EventAttributes': event_attributes,
+            'NodeName': node_name,
+            'CustomEventType': custom_event_type,
+            'AnalysisID': analysis_id,
+            'AnalysisDescription': analysis_description,
+            'ProcessingStatus': processing_status,
+            'ErrorMessage': str(error_message),
+            'TotalItemCount': total_item_count,
+            'DetectedObjects': detected_objects,
+            'LinkedDetectedObjects': linked_detected_objects
+        }
 
         assert processing_status in ProcessingStatus, \
             logger.exception("This Processing Status is not part of the Spec.")
-        analysis_list_item['ProcessingStatus'] = processing_status
-
-        analysis_list_item['EventType'] = event_type
-        analysis_list_item['CustomEventType'] = custom_event_type
-        analysis_list_item['AnalysisID'] = analysis_id
-        analysis_list_item['AnalysisDescription'] = analysis_description
-        analysis_list_item['ErrorMessage'] = str(error_message)
-        analysis_list_item['TotalItemCount'] = total_item_count
-        analysis_list_item['DetectedObjects'] = detected_objects
 
         self.scenemark['AnalysisList'].append(analysis_list_item)
         logger.info(f"AnalysisList item of EventType '{event_type}' added")
@@ -772,6 +855,7 @@ class SceneMark:
         version_list_item['VersionNumber'] = self.my_version_number
         version_list_item['DateTimeStamp'] = self.my_timestamp
         version_list_item['NodeID'] = self.node_id
+        version_list_item["NodeName"] = self.node_name
 
         self.scenemark['VersionControl']['VersionList'].append(version_list_item)
 

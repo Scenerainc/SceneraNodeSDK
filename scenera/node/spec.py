@@ -6,29 +6,6 @@ For more information: https://www.nicealliance.org/specs/
 # pylint: disable=too-many-lines
 
 # pylint: disable=too-few-public-methods
-EventType = frozenset([
-    "Custom",
-    "RegionOfInterest",
-    "ItemPresence",
-    "Loitering",
-    "Intrusion",
-    "Falldown",
-    "Violence",
-    "Fire",
-    "Abandonment",
-    "SpeedGate",
-    "Xray",
-    "Facility",
-    "Scheduled",
-    "Test",
-    "HatOff",
-    "LightOff",
-    "PosBreak",
-    "IllegalStay",
-    "RevIntrustion",
-    "LineCrossing"
-    ])
-
 NICEItemType = frozenset([
     "Motion",
     "Face",
@@ -83,6 +60,7 @@ DataType = frozenset([
     "LiquidLevel",
     "Acceleration",
     "Rotation",
+    "Vector",
     "Other",
     ])
 

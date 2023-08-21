@@ -64,8 +64,8 @@ class SceneMark:
         node_id : str,
         node_name : str = "",
         tracking : bool = False,
-        disable_token_verification: bool = False,
-        disable_linter: bool = True
+        disable_token_verification : bool = False,
+        disable_linter : bool = True
         ):
 
         # --- Validation
@@ -112,16 +112,19 @@ class SceneMark:
 
         # Get the DataType the Node works on
         if not tracking:
-            self.node_datatype_mode = extract_node_datatype_mode(self.nodesequencer_header)
+            self.node_datatype_mode = \
+                extract_node_datatype_mode(self.nodesequencer_header)
             # Get the targets to work on
             self.targets = self.get_scenedata_uri_list()
             logger.info(f"Working on these items: {self.targets}")
 
         # Get the polygon if there is one.
-        self.regions_of_interest = get_regions_of_interest(self.nodesequencer_header)
+        self.regions_of_interest = get_regions_of_interest(
+            self.nodesequencer_header)
 
         # Find the latest scenedata additions
-        self.latest_sd_version = get_latest_scenedata_version_number(self.scenemark)
+        self.latest_sd_version = get_latest_scenedata_version_number(
+            self.scenemark)
 
         # --- ProcessingType
         try:

@@ -285,7 +285,7 @@ class SceneMark:
 
     def get_detected_objects_from_sd_uri(self, scenedata_uri):
         """
-        Creates a list of DetectedObjects that have the pased
+        Creates a list of DetectedObjects that have the passed
         SceneDataURI's associated ID listed as RelatedSceneData.
 
         :return: list of DetectedObjects
@@ -422,13 +422,8 @@ class SceneMark:
         :return: attribute item
         :rtype: dict
         """
-        attribute_item = {}
-        attribute_item['Attribute'] = attribute
-        attribute_item['Value'] = value
-        attribute_item['ProbabilityOfAttribute'] = probability_of_attribute
-
         logger.info(f"Attribute item of {attribute}:{value} created")
-        return attribute_item
+        return pascal(locals())
     
     @staticmethod
     def generate_polygon_item(type: str, value: list[float]) -> dict:
@@ -452,10 +447,7 @@ class SceneMark:
         if not all(isinstance(item, float) for item in value):
             raise ValueError("All elements in the list must be floats.")
 
-        polygon_item = {}
-        polygon_item['Type'] = type
-        polygon_item['Value'] =  value
-        return polygon_item
+        return pascal(locals())
 
     @staticmethod
     def generate_detected_object_item(
@@ -549,7 +541,7 @@ class SceneMark:
         detected_object = {}
         detected_object['NICEItemType'] = nice_item_type
         detected_object['RelatedSceneData'] = related_scenedata_id
-        detected_object['RelatedSceneDataList'] =  related_scenedata_list
+        detected_object['RelatedSceneDataList'] = related_scenedata_list
         detected_object['CustomItemType'] = custom_item_type
         detected_object['ItemID'] = item_id
         detected_object['Probability'] = probability
@@ -566,7 +558,7 @@ class SceneMark:
     @staticmethod
     def generate_time_frame(
         start_time_stamp : str,
-        end_time_stamp : str,
+        last_time_stamp : str,
         ):
         return pascal(locals())
 

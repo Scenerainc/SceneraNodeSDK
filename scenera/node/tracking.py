@@ -4,7 +4,7 @@ def generate_meta_db_attribute_item(
     attribute: str,
     value: str,
     start_time_stamp: str,
-    end_time_stamp: str,
+    last_time_stamp: str,
     related_track: str,
     probability_of_attribute: float = 1.0,
     ):
@@ -14,7 +14,8 @@ def generate_meta_db_row(
     version: float,
     directional_movement_id: str,
     item_id: str,
-    liveness: str,
+    start_time_stamp : str,
+    last_time_stamp : str,
     source_node_id: str,
     nice_item_type: str,
     source_node_description: str = "",
@@ -31,7 +32,7 @@ def generate_meta_db_row(
 def generate_event_db_row(
     version: float,
     start_time_stamp: str,
-    end_time_stamp: str,
+    last_time_stamp: str,
     event_type: str,
     event_category: str,
     processing_status: str = "",

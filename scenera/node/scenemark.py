@@ -585,11 +585,9 @@ class SceneMark:
     def add_analysis_list_item(
         self,
         processing_status: str,
-        node_id: str,
         event_type: str,
-        event_category: str,
+        event_category: Optional[str] = "",
         event_attributes: Optional[List] = None,
-        node_name: Optional[str] = "",
         custom_event_type: Optional[str] = "",
         analysis_description: Optional[str] = "",
         analysis_id: Optional[str] = "",
@@ -665,11 +663,11 @@ class SceneMark:
 
         analysis_list_item = {
             'VersionNumber': self.my_version_number,
-            'NodeID': node_id,
+            'NodeID': self.node_id,
             'EventType': event_type,
             'EventCategory': event_category,
             'EventAttributes': event_attributes,
-            'NodeName': node_name,
+            'NodeName': self.node_name,
             'CustomEventType': custom_event_type,
             'AnalysisID': analysis_id,
             'AnalysisDescription': analysis_description,
